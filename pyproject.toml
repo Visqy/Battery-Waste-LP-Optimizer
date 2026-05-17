@@ -62,6 +62,7 @@ Issues = "https://github.com/your-username/battery-optimizer/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["battery_optimizer*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
