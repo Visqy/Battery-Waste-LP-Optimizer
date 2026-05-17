@@ -1,94 +1,193 @@
 # NMC Battery Recycling Supply Chain Optimizer
 
-A GUI-based decision support tool for optimizing the supply chain of
-Nickel-Manganese-Cobalt (NMC) electric vehicle battery recycling on
-Java Island, Indonesia.
+A Shiny for Python decision support tool for optimizing the supply chain of Nickel-Manganese-Cobalt (NMC) electric vehicle battery recycling on Java Island, Indonesia.
+
+The software implements a single-objective Linear Programming (LP) model for route allocation between collection centers and recycling facilities. It supports default baseline data, Excel-based input, manual parameter adjustment, validation, optimization, result visualization, and Excel export.
 
 Model reference: Kasy et al. (2024), Jurnal Optimasi Sistem Industri, 23(2), 207-226.
 
-## Software Purpose
+## 1. Software Purpose
 
-This software implements a single-objective Linear Programming (LP) model
-to minimize the total net operating cost of the NMC battery recycling
-supply chain. The model is derived from the MILP framework by Kasy et al.
-(2024) with the simplification y_j = 1 (all facilities assumed active).
+This software provides a reproducible graphical interface for solving an LP-based NMC battery recycling supply chain allocation problem.
 
-## Installation
+The main purpose is to support:
 
-Requirements: Python 3.10+
+- Input preparation through an Excel template
+- Manual adjustment of supply, capacity, cost, and revenue parameters
+- Input validation before optimization
+- LP optimization using PuLP and CBC
+- Result interpretation through tables, charts, and exportable Excel reports
+- Reuse of the current configuration through an exportable input workbook
 
-Install the package and dependencies:
+The model formulation is locked. Users can edit parameter values, but they cannot change the objective function, constraints, solver logic, or model type.
 
-    pip install -e ".[test]"
+## 2. Installation
 
-Or install dependencies manually:
+### Requirements
 
-    pip install shiny>=0.9.0 pandas>=2.0.0 openpyxl>=3.1.0 pulp>=2.7.0 matplotlib>=3.7.0
+- Python 3.10 or newer
+- pip
+- A modern web browser
 
-## Run Command
+### Recommended installation
 
-    shiny run app.py --reload
+Create and activate a virtual environment first.
 
-Open the browser at http://127.0.0.1:8000
+Windows PowerShell:
 
-## Test Command
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install -e ".$test$"
+```
 
-    pytest tests/
+macOS or Linux:
 
-## Project Structure
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install -e ".$test$"
+```
 
-    app.py                           Main Shiny application entry point
-    app_modules/init.py
-        state.py                     Shared reactive state
-        page_home.py                 Home page
-        page_template.py             Template download
-        page_upload.py               Excel file upload
-        page_editor.py               Parameter editor
-        page_validation.py           Input validation
-        page_optimization.py         LP optimization runner
-        page_results.py              Results display and export
-        page_documentation.py        Model documentation
-    src/
-        battery_optimizer/
-            init.py
-            config.py                Constants
-            schema.py                Table schema definitions
-            default_data.py          Default baseline data
-            io_excel.py              Excel read/write
-            validation.py            Input validation logic
-            optimizer.py             PuLP LP solver
-            results.py               Results processing
-            report.py                Excel report export
-    tests/
-        test_validation.py
-        test_optimizer.py
-        test_excel_io.py
-        test_results.py
-    data/                            Auto-generated on first run
-        default_parameters.xlsx
-        battery_input_template.xlsx
-        optimization_results.xlsx
-    requirements.txt
-    pyproject.toml
-    README.md
+## 3. Usage
 
-## Excel Input Format
+Run the application from the project root directory:
 
-The input Excel file must contain three sheets:
+```bash
+python -m shiny run app.py --reload
+```
 
-Sheet: collection_centers
-Columns: cc_id, name, province, supply_kg
+Then open:
 
-Sheet: recycling_facilities
-Columns: rf_id, name, province, capacity_kg, processing_cost_rp_kg, recovery_revenue_rp_kg
+```text
+http://127.0.0.1:8000
+```
 
-Sheet: transport_costs
-Columns: cc_id, rf_id, transport_cost_rp_kg [, distance_km (optional)]
-One row per (cc_id, rf_id) pair. All pairs must be present.
+## 4. Test Command
 
-## Default Baseline Data
+Run all tests:
 
-Source: Kasy et al. (2024), Period 4 (peak operating conditions)
+```bash
+python -m pytest
+```
+
+Expected result:
+
+```text
+All tests should pass.
+```
+
+The test suite covers:
+
+- Default data loading
+- Excel input and output
+- Input validation
+- LP optimization
+- Result processing
+- Economic interpretation
+
+## 5. Project Structure
+
+```text
+battery-optimizer/
+|-- app.py
+|-- pyproject.toml
+|-- README.md
+|-- LICENSE
+|-- CITATION.cff
+|-- requirements.txt
+|-- app_modules/
+|   |-- __init__.py
+|   |-- mathjax.py
+|   |-- state.py
+|   |-- page_home.py
+|   |-- page_template.py
+|   |-- page_upload.py
+|   |-- page_editor.py
+|   |-- page_validation.py
+|   |-- page_optimization.py
+|   |-- page_results.py
+|   |-- page_documentation.py
+|-- src/
+|   |-- battery_optimizer/
+|       |-- __init__.py
+|       |-- config.py
+|       |-- schema.py
+|       |-- default_data.py
+|       |-- io_excel.py
+|       |-- validation.py
+|       |-- optimizer.py
+|       |-- results.py
+|       |-- report.py
+|-- tests/
+|   |-- test_validation.py
+|   |-- test_optimizer.py
+|   |-- test_excel_io.py
+|   |-- test_results.py
+|-- data/
+|   |-- default_parameters.xlsx
+|-- templates/
+|   |-- battery_input_template.xlsx
+|-- outputs/
+|   |-- optimization_results.xlsx
+|   |-- current_configuration.xlsx
+|-- examples/
+|   |-- README.md
+```
+
+## 6. Input Format
+
+The software accepts an Excel input workbook with the following required sheets:
+
+```text
+collection_centers
+recycling_facilities
+transport_costs
+```
+
+The workbook may also include optional sheets:
+
+```text
+metadata
+scenario_notes
+```
+
+### Sheet: collection_centers
+
+| Column    | Description                                     | Required |
+| --------- | ----------------------------------------------- | -------- |
+| cc_id     | Collection center ID                            | Yes      |
+| name      | Collection center name                          | Yes      |
+| province  | Province name                                   | Yes      |
+| supply_kg | Annual available NMC battery waste supply in kg | Yes      |
+
+### Sheet: recycling_facilities
+
+| Column                 | Description                               | Required |
+| ---------------------- | ----------------------------------------- | -------- |
+| rf_id                  | Recycling facility ID                     | Yes      |
+| name                   | Recycling facility name                   | Yes      |
+| province               | Province name                             | Yes      |
+| capacity_kg            | Annual facility processing capacity in kg | Yes      |
+| processing_cost_rp_kg  | Processing cost in Rp per kg              | Yes      |
+| recovery_revenue_rp_kg | Recovered material revenue in Rp per kg   | Yes      |
+
+### Sheet: transport_costs
+
+| Column               | Description                      | Required |
+| -------------------- | -------------------------------- | -------- |
+| cc_id                | Collection center ID             | Yes      |
+| rf_id                | Recycling facility ID            | Yes      |
+| transport_cost_rp_kg | Transportation cost in Rp per kg | Yes      |
+| distance_km          | Route distance in km             | No       |
+
+Every collection center and recycling facility pair must appear in the transport_costs sheet.
+
+## 7. Default Baseline Data
+
+Source: Kasy et al. (2024), Period 4, peak operating conditions.
 
 ### Collection Centers
 
@@ -110,64 +209,164 @@ Source: Kasy et al. (2024), Period 4 (peak operating conditions)
 | RF01 | RF Jakarta         |            365,000 |                  28,360 |                  238,400 |
 | RF02 | RF Surabaya        |            365,000 |                  28,360 |                  238,400 |
 
-## Locked Model
+## 8. Model Formulation
 
-The LP model formulation is locked. Users cannot modify the objective
-function, constraint structure, solver, or model type.
+The model is a single-objective Linear Programming model.
 
-Objective (minimize):
-$Z = \sum_{i,j} (C_ij + P_j - R_j) * x_{ij}$
+### Sets
 
-Supply constraint (for each collection center i):
-$\sum_j x_{ij} \leq S_i$
+- $I$: set of collection centers
+- $J$: set of recycling facilities
 
-Capacity constraint (for each recycling facility j):
-$\sum_i x_{ij} \leq Cap_j$
+### Decision Variable
 
-Non-negativity:
-$x_{ij} \geq$$ 0$
+$x_{ij} \geq 0$
 
-Assumption: $y_j = 1$ for all $j$ (all recycling facilities are active)
+where $x_{ij}$ is the NMC battery waste volume allocated from collection center (i) to recycling facility (j).
 
-## Editable Parameters
+### Parameters
 
-Users may edit the following via the Parameter Editor tab or by uploading
-a custom Excel file:
+- $S_i$: available supply at collection center $i$
+- $Cap_j$: processing capacity at recycling facility $j$
+- $C_{ij}$: transportation cost from collection center $i$ to recycling facility $j$
+- $P_j$: processing cost at recycling facility $j$
+- $R_j$: recovered material revenue at recycling facility $j$
 
-$S_i $   : supply_kg per collection center
-  $Cap_j$ : capacity*kg per recycling facility
-$C*{ij}$ : transport_cost_rp_kg per route
-$P_j$ : processing_cost_rp_kg per recycling facility
-$R_j$ : recovery_revenue_rp_kg per recycling facility
-Names and provinces of collection centers and recycling facilities
+### Objective Function
 
-## Outputs
+$
+\min Z =
+\sum_{i \in I}
+\sum_{j \in J}
+\left(C_{ij} + P_j - R_j\right)x_{ij}
+$
+
+### Supply Constraint
+
+$\sum_{j \in J} x_{ij} \leq S_i,\quad \forall i \in I$
+
+### Capacity Constraint
+
+$\sum_{i \in I} x_{ij} \leq Cap_j,\quad \forall j \in J$
+
+### Non-Negativity Constraint
+
+$x_{ij} \geq 0,\quad \forall i \in I,\ j \in J$
+
+### Facility Activation Assumption
+
+$y_j = 1,\quad \forall j \in J$
+
+All recycling facilities are assumed active. Facility location decisions are not optimized in this implementation.
+
+## 9. Editable Parameters
+
+Users may edit the following parameters through the Parameter Editor tab or by uploading a custom Excel file:
+
+| Symbol      | Software Column        | Description                                       |
+| ----------- | ---------------------- | ------------------------------------------------- |
+| $S_i$     | supply_kg              | Supply per collection center                      |
+| $Cap_j$   | capacity_kg            | Capacity per recycling facility                   |
+| $C\_{ij}$ | transport_cost_rp_kg   | Transportation cost per route                     |
+| $P_j$     | processing_cost_rp_kg  | Processing cost per recycling facility            |
+| $R_j$     | recovery_revenue_rp_kg | Recovered material revenue per recycling facility |
+
+Users may also edit collection center names, recycling facility names, and province labels.
+
+## 10. Output Format
 
 The Results tab displays:
 
-- Solver status, objective value, runtime
-- Total allocated volume, unused supply, unused capacity
-- Allocation matrix ($CC \times RF$)
-- Route allocation table with net cost coefficients
+- Solver status
+- Economic status
+- Minimum net cost objective
+- Estimated net benefit or estimated net cost
+- Total allocated volume
+- Unused supply
+- Unused capacity
+- Runtime
+- Allocation matrix
+- Route allocation table
 - Facility utilization chart
 - Supply usage chart
 - Constraint slack and shadow price table
-- Automatic interpretation in Bahasa Indonesia
+- Automatic interpretation
 
-Export: Click "Export Results to Excel" to download a multi-sheet .xlsx file.
+## 11. Excel Export
 
-## Assumptions and Limitations
+The software supports two export types.
 
-1. $y_j = 1$: all recycling facilities are assumed active.
-2. Deterministic: no uncertainty in supply, capacity, or cost.
-3. Single-period: one annual planning period.
-4. Single-objective: only economic cost $Z_1$ is optimized.
-5. Environmental ($Z_2$) and material recovery ($Z_3$) objectives not included.
-6. Facility location decisions not optimized.
+### Export Results to Excel
 
-## Reference
+This workbook contains:
 
-Kasy, F.I., Hisjam, M., Jauhari, W.A., & Hassan, S.A.H.S. (2024).
-Optimizing the Supply Chain for Recycling Electric Vehicle NMC Batteries.
-Jurnal Optimasi Sistem Industri, 23(2), 207-226.
-https://doi.org/10.25077/josi.v23.n2.p207-226.2024
+```text
+summary
+allocation_matrix
+route_allocation
+facility_utilization
+supply_usage
+constraints
+interpretation
+```
+
+Currency values are exported as numeric Excel values with Rupiah formatting where applicable.
+
+### Export Current Configuration
+
+This workbook stores the currently active input configuration. It follows the same structure as the input template and can be uploaded again.
+
+Expected sheets:
+
+```text
+metadata
+collection_centers
+recycling_facilities
+transport_costs
+scenario_notes
+```
+
+## 12. Example Workflow
+
+1. Open the application.
+2. Use the default baseline data or download the Excel template.
+3. Upload a filled Excel input file or edit parameters in the GUI.
+4. Run validation.
+5. Fix all validation errors if any.
+6. Run optimization.
+7. Review the allocation matrix, route allocation table, utilization charts, and interpretation.
+8. Export the result workbook.
+9. Export the current configuration if the scenario should be reused later.
+
+## 13. Assumptions and Limitations
+
+1. All recycling facilities are assumed active: (y_j = 1).
+2. The model is deterministic.
+3. The model uses one annual planning period.
+4. Costs and revenues are proportional to allocated volume.
+5. Only the economic objective is optimized.
+6. Environmental impact is not included.
+7. Material recovery efficiency is not optimized as a separate objective.
+8. Facility location decisions are not optimized.
+9. Multi-period planning is not supported.
+10. Stochastic supply and demand uncertainty are not modeled.
+
+## 14. Citation
+
+If you use this software, cite both the software and the model reference.
+
+Software citation:
+
+```text
+Your Name. (2026). NMC Battery Recycling Supply Chain Optimizer. Version 1.0.0. MIT License.
+```
+
+Model reference:
+
+```text
+Kasy, F. I., Hisjam, M., Jauhari, W. A., & Hassan, S. A. H. S. (2024). Optimizing the Supply Chain for Recycling Electric Vehicle NMC Batteries. Jurnal Optimasi Sistem Industri, 23(2), 207-226. https://doi.org/10.25077/josi.v23.n2.p207-226.2024
+```
+
+## 15. License
+
+This project is released under the MIT License.

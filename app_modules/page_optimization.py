@@ -1,0 +1,205 @@
+from shiny import module, ui, render, reactive
+from battery_optimizer.optimizer import solve_lp
+from battery_optimizer.results import process_all_results
+
+
+def formula_block(content):
+    return ui.div(
+        ui.HTML(content),
+        style="background: #f4f4f4; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.5rem;",
+    )
+
+
+@module.ui
+def optimization_ui():
+    return ui.nav_panel(
+        "Optimization",
+        ui.div(
+            ui.h2("LP Optimization"),
+            ui.layout_columns(
+                ui.card(
+                    ui.card_header("Solver Information"),
+                    ui.card_body(
+                        ui.tags.ul(
+                            ui.tags.li("Solver: COIN-OR CBC via PuLP"),
+                            ui.tags.li("Method: Revised Simplex"),
+                            ui.tags.li("Model type: Linear Programming, single-objective"),
+                            ui.tags.li("Objective: Minimize total net cost"),
+                            ui.tags.li(ui.HTML(r"Variables: \(x_{ij} \geq 0\), continuous")),
+                            ui.tags.li("Constraints: supply limits and capacity limits"),
+                        )
+                    ),
+                ),
+                ui.card(
+                    ui.card_header("Locked Model"),
+                    ui.card_body(
+                        formula_block(
+                            r"""
+                            \[
+                            \min Z =
+                            \sum_{i \in I}
+                            \sum_{j \in J}
+                            \left(C_{ij} + P_{j} - R_{j}\right)x_{ij}
+                            \]
+                            """
+                        ),
+                        ui.p("Subject to:"),
+                        formula_block(
+                            r"""
+                            \[
+                            \sum_{j \in J} x_{ij} \leq S_{i},
+                            \quad \forall i \in I
+                            \]
+                            """
+                        ),
+                        formula_block(
+                            r"""
+                            \[
+                            \sum_{i \in I} x_{ij} \leq Cap_{j},
+                            \quad \forall j \in J
+                            \]
+                            """
+                        ),
+                        formula_block(
+                            r"""
+                            \[
+                            x_{ij} \geq 0,
+                            \quad \forall i \in I,\ j \in J
+                            \]
+                            """
+                        ),
+                        formula_block(
+                            r"""
+                            \[
+                            y_{j} = 1,
+                            \quad \forall j \in J
+                            \]
+                            """
+                        ),
+                    ),
+                ),
+                col_widths=[6, 6],
+            ),
+            ui.card(
+                ui.card_header("Run Optimization"),
+                ui.card_body(
+                    ui.output_ui("validation_gate"),
+                    ui.input_action_button("run_optimization", "Run Optimization", class_="btn-success btn-lg"),
+                    ui.output_ui("opt_status"),
+                ),
+                style="margin-top: 1rem;",
+            ),
+            style="padding: 1rem;",
+        ),
+    )
+
+
+@module.server
+def optimization_server(input, output, session, state):
+    @output
+    @render.ui
+    def validation_gate():
+        val_result = state.validation_result()
+        if val_result is None:
+            return ui.div(
+                ui.div(
+                    "Validation has not been run. Go to the Validation tab and run validation first.",
+                    class_="alert alert-warning",
+                    style="margin-bottom: 1rem;",
+                )
+            )
+        if not val_result["is_valid"]:
+            return ui.div(
+                ui.div(
+                    f"Validation failed with {len(val_result['errors'])} error(s). "
+                    "Fix all errors in the Parameter Editor and re-run validation before optimizing.",
+                    class_="alert alert-danger",
+                    style="margin-bottom: 1rem;",
+                )
+            )
+        return ui.div(
+            ui.div(
+                "Validation passed. Ready to optimize.",
+                class_="alert alert-success",
+                style="margin-bottom: 1rem;",
+            )
+        )
+
+    @reactive.effect
+    @reactive.event(input.run_optimization)
+    def _run_opt():
+        val_result = state.validation_result()
+        if val_result is None:
+            ui.notification_show(
+                "Please run validation first.",
+                type="error",
+                duration=4,
+            )
+            return
+        if not val_result["is_valid"]:
+            ui.notification_show(
+                "Validation has errors. Fix them before optimizing.",
+                type="error",
+                duration=4,
+            )
+            return
+
+        cc = state.collection_centers()
+        rf = state.recycling_facilities()
+        tc = state.transport_costs()
+
+        opt_result = solve_lp(cc, rf, tc)
+        state.optimization_result.set(opt_result)
+
+        if opt_result["status"] == "Optimal":
+            processed = process_all_results(opt_result, cc, rf, tc)
+            state.processed_results.set(processed)
+            ui.notification_show(
+                f"Optimization complete. Status: Optimal. Runtime: {opt_result['runtime']:.3f}s",
+                type="message",
+                duration=5,
+            )
+        else:
+            state.processed_results.set(None)
+            ui.notification_show(
+                f"Optimization returned status: {opt_result['status']}. Check parameters.",
+                type="warning",
+                duration=6,
+            )
+
+    @output
+    @render.ui
+    def opt_status():
+        opt_result = state.optimization_result()
+        if opt_result is None:
+            return ui.div()
+
+        status = opt_result["status"]
+        obj = opt_result["objective_value"]
+        rt = opt_result["runtime"]
+
+        color = "success" if status == "Optimal" else "danger"
+        obj_text = f"Rp {obj:,.2f}" if obj is not None else "N/A"
+
+        return ui.div(
+            ui.hr(),
+            ui.h4("Last Optimization Result"),
+            ui.layout_columns(
+                ui.card(
+                    ui.card_header("Solver Status"),
+                    ui.card_body(
+                        ui.div(status, class_=f"badge bg-{color}", style="font-size: 1.1em;")
+                    ),
+                ),
+                ui.card(
+                    ui.card_header("Objective Value (Rp/year)"),
+                    ui.card_body(ui.p(obj_text, style="font-weight: bold;")),
+                ),
+                ui.card(
+                    ui.card_header("Runtime (seconds)"),
+                    ui.card_body(ui.p(f"{rt:.4f}")),
+                ),
+                col_widths=[4, 4, 4],
+            ),
+            style="margin-top: 1rem;",
+        )

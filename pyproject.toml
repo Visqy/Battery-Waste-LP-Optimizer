@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "battery-optimizer"
+version = "1.0.0"
+description = "LP-based supply chain optimizer for NMC electric vehicle battery recycling in Java Island, Indonesia"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Your Name", email = "your.email@example.com" }
+]
+keywords = [
+    "linear programming",
+    "battery recycling",
+    "reverse logistics",
+    "supply chain optimization",
+    "decision support system",
+    "shiny",
+    "softwarex"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+dependencies = [
+    "shiny>=0.9.0",
+    "pandas>=2.0.0,<2.3.0",
+    "numpy>=1.26.0,<2.0",
+    "openpyxl>=3.1.0",
+    "xlsxwriter>=3.1.0",
+    "pulp>=2.7.0,<4.0",
+    "matplotlib>=3.7.0",
+    "plotly>=5.18.0",
+    "jinja2>=3.1.0"
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.4.0"
+]
+dev = [
+    "pytest>=7.4.0",
+    "build>=1.0.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/your-username/battery-optimizer"
+Repository = "https://github.com/your-username/battery-optimizer"
+Issues = "https://github.com/your-username/battery-optimizer/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+filterwarnings = [
+    "ignore:LpVariable.dicts is deprecated:DeprecationWarning",
+    "ignore:Using LpProblem.constraints as a dict mapping is deprecated:DeprecationWarning"
+]
