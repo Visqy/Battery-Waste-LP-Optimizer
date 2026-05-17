@@ -1,4 +1,3 @@
-import pandas as pd
 from battery_optimizer.optimizer import solve_lp
 from battery_optimizer.results import (
     build_allocation_matrix,
@@ -7,6 +6,8 @@ from battery_optimizer.results import (
     build_route_allocation_table,
     build_constraint_table,
     build_economic_summary,
+    calculate_system_metrics,
+    generate_policy_insight,
     generate_interpretation,
     process_all_results,
 )
@@ -28,9 +29,11 @@ def get_solved_result():
 def test_allocation_matrix_shape():
     opt_result, cc, rf, tc = get_solved_result()
     matrix = build_allocation_matrix(opt_result)
+
     assert len(matrix) == len(cc)
-    for j in rf["rf_id"].tolist():
-        assert j in matrix.columns
+
+    for rf_id in rf["rf_id"].tolist():
+        assert rf_id in matrix.columns
 
 
 def test_allocation_matrix_totals_match():
@@ -38,9 +41,12 @@ def test_allocation_matrix_totals_match():
     matrix = build_allocation_matrix(opt_result)
     rf_ids = rf["rf_id"].tolist()
 
-    for i in cc["cc_id"].tolist():
-        row_total = sum(matrix.loc[i, j] for j in rf_ids)
-        expected_total = sum(opt_result["allocations"].get((i, j), 0.0) for j in rf_ids)
+    for cc_id in cc["cc_id"].tolist():
+        row_total = sum(matrix.loc[cc_id, rf_id] for rf_id in rf_ids)
+        expected_total = sum(
+            opt_result["allocations"].get((cc_id, rf_id), 0.0)
+            for rf_id in rf_ids
+        )
         assert abs(row_total - expected_total) < 1e-4
 
 
@@ -48,32 +54,48 @@ def test_supply_usage_columns():
     opt_result, cc, rf, tc = get_solved_result()
     df = calculate_supply_usage(opt_result, cc)
 
-    for col in ["cc_id", "supply_kg", "allocated_kg", "unused_kg", "usage_pct"]:
-        assert col in df.columns
+    expected_columns = [
+        "cc_id",
+        "supply_kg",
+        "allocated_kg",
+        "unused_kg",
+        "usage_pct",
+    ]
+
+    for column in expected_columns:
+        assert column in df.columns
 
 
 def test_supply_usage_nonnegative_unused():
     opt_result, cc, rf, tc = get_solved_result()
     df = calculate_supply_usage(opt_result, cc)
 
-    for val in df["unused_kg"]:
-        assert val >= -1e-4
+    for value in df["unused_kg"]:
+        assert value >= -1e-4
 
 
 def test_facility_utilization_columns():
     opt_result, cc, rf, tc = get_solved_result()
     df = calculate_facility_utilization(opt_result, rf)
 
-    for col in ["rf_id", "capacity_kg", "allocated_kg", "unused_capacity_kg", "utilization_pct"]:
-        assert col in df.columns
+    expected_columns = [
+        "rf_id",
+        "capacity_kg",
+        "allocated_kg",
+        "unused_capacity_kg",
+        "utilization_pct",
+    ]
+
+    for column in expected_columns:
+        assert column in df.columns
 
 
 def test_facility_utilization_pct_range():
     opt_result, cc, rf, tc = get_solved_result()
     df = calculate_facility_utilization(opt_result, rf)
 
-    for val in df["utilization_pct"]:
-        assert -0.01 <= val <= 100.01
+    for value in df["utilization_pct"]:
+        assert -0.01 <= value <= 100.01
 
 
 def test_route_table_has_net_cost_and_benefit():
@@ -132,6 +154,91 @@ def test_negative_objective_is_positive_net_benefit():
         assert "negative" in summary["economic_message"].lower()
 
 
+def test_system_metrics_has_required_keys():
+    opt_result, cc, rf, tc = get_solved_result()
+    metrics = calculate_system_metrics(opt_result, cc, rf)
+
+    expected_keys = [
+        "total_allocated_kg",
+        "total_supply_kg",
+        "total_capacity_kg",
+        "unused_supply_kg",
+        "unused_capacity_kg",
+        "supply_absorption_pct",
+        "system_capacity_utilization_pct",
+        "max_facility_utilization_pct",
+        "most_utilized_facility",
+        "binding_supply_centers",
+        "binding_capacity_facilities",
+    ]
+
+    for key in expected_keys:
+        assert key in metrics
+
+
+def test_system_metrics_values_are_numeric():
+    opt_result, cc, rf, tc = get_solved_result()
+    metrics = calculate_system_metrics(opt_result, cc, rf)
+
+    numeric_keys = [
+        "total_allocated_kg",
+        "total_supply_kg",
+        "total_capacity_kg",
+        "unused_supply_kg",
+        "unused_capacity_kg",
+        "supply_absorption_pct",
+        "system_capacity_utilization_pct",
+        "max_facility_utilization_pct",
+    ]
+
+    for key in numeric_keys:
+        assert isinstance(metrics[key], (int, float))
+
+
+def test_policy_insight_has_required_keys():
+    opt_result, cc, rf, tc = get_solved_result()
+    insight = generate_policy_insight(opt_result, cc, rf)
+
+    expected_keys = [
+        "economic_status",
+        "supply_status",
+        "capacity_status",
+        "bottleneck_status",
+        "policy_priority",
+        "key_message",
+        "recommended_next_analysis",
+        "supply_absorption_pct",
+        "system_capacity_utilization_pct",
+        "max_facility_utilization_pct",
+        "binding_capacity_facilities",
+        "binding_supply_centers",
+    ]
+
+    for key in expected_keys:
+        assert key in insight
+
+
+def test_policy_insight_is_decision_oriented():
+    opt_result, cc, rf, tc = get_solved_result()
+    insight = generate_policy_insight(opt_result, cc, rf)
+
+    assert isinstance(insight["policy_priority"], str)
+    assert isinstance(insight["key_message"], str)
+    assert isinstance(insight["recommended_next_analysis"], str)
+    assert len(insight["policy_priority"]) > 10
+    assert len(insight["key_message"]) > 50
+    assert len(insight["recommended_next_analysis"]) > 20
+
+
+def test_policy_insight_percentages_are_valid():
+    opt_result, cc, rf, tc = get_solved_result()
+    insight = generate_policy_insight(opt_result, cc, rf)
+
+    assert 0 <= insight["supply_absorption_pct"] <= 100.01
+    assert 0 <= insight["system_capacity_utilization_pct"] <= 100.01
+    assert 0 <= insight["max_facility_utilization_pct"] <= 100.01
+
+
 def test_interpretation_is_string():
     opt_result, cc, rf, tc = get_solved_result()
     text = generate_interpretation(opt_result, cc, rf)
@@ -168,6 +275,7 @@ def test_process_all_results_returns_all_keys():
         "route_table",
         "constraint_table",
         "economic_summary",
+        "policy_insight",
         "interpretation",
     ]
 
@@ -190,3 +298,10 @@ def test_processed_economic_summary_matches_objective():
 
     assert summary["objective_value"] == opt_result["objective_value"]
     assert summary["net_economic_value"] == -opt_result["objective_value"]
+
+
+def test_processed_policy_insight_matches_economic_summary():
+    opt_result, cc, rf, tc = get_solved_result()
+    processed = process_all_results(opt_result, cc, rf, tc)
+
+    assert processed["policy_insight"]["economic_status"] == processed["economic_summary"]["economic_status"]

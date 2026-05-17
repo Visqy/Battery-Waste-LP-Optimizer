@@ -219,6 +219,220 @@ def build_economic_summary(opt_result):
     }
 
 
+def calculate_system_metrics(opt_result, cc_df, rf_df):
+    allocations = opt_result["allocations"]
+    cc_ids = opt_result["cc_ids"]
+    rf_ids = opt_result["rf_ids"]
+
+    total_allocated = float(sum(allocations.values()))
+    total_supply = float(cc_df["supply_kg"].sum())
+    total_capacity = float(rf_df["capacity_kg"].sum())
+
+    unused_supply = total_supply - total_allocated
+    unused_capacity = total_capacity - total_allocated
+
+    supply_absorption_pct = (total_allocated / total_supply * 100) if total_supply > 0 else 0.0
+    system_capacity_utilization_pct = (total_allocated / total_capacity * 100) if total_capacity > 0 else 0.0
+
+    rf_name_map = dict(zip(rf_df["rf_id"], rf_df["name"])) if "name" in rf_df.columns else {}
+    cap_map = dict(zip(rf_df["rf_id"], rf_df["capacity_kg"].astype(float)))
+    cc_name_map = dict(zip(cc_df["cc_id"], cc_df["name"])) if "name" in cc_df.columns else {}
+
+    facility_rows = []
+    for j in rf_ids:
+        allocated_j = sum(allocations.get((i, j), 0.0) for i in cc_ids)
+        capacity_j = cap_map.get(j, 0.0)
+        utilization_j = (allocated_j / capacity_j * 100) if capacity_j > 0 else 0.0
+        facility_rows.append(
+            {
+                "rf_id": j,
+                "name": rf_name_map.get(j, j),
+                "allocated_kg": allocated_j,
+                "capacity_kg": capacity_j,
+                "utilization_pct": utilization_j,
+            }
+        )
+
+    if facility_rows:
+        most_utilized = max(facility_rows, key=lambda item: item["utilization_pct"])
+        max_facility_utilization_pct = most_utilized["utilization_pct"]
+        most_utilized_facility = most_utilized["name"]
+    else:
+        max_facility_utilization_pct = 0.0
+        most_utilized_facility = "N/A"
+
+    binding_supply = [
+        cc_name_map.get(i, i)
+        for i in cc_ids
+        if opt_result["supply_slacks"].get(i, 1) is not None
+        and abs(opt_result["supply_slacks"].get(i, 1)) < 1e-4
+    ]
+
+    binding_capacity = [
+        rf_name_map.get(j, j)
+        for j in rf_ids
+        if opt_result["capacity_slacks"].get(j, 1) is not None
+        and abs(opt_result["capacity_slacks"].get(j, 1)) < 1e-4
+    ]
+
+    return {
+        "total_allocated_kg": total_allocated,
+        "total_supply_kg": total_supply,
+        "total_capacity_kg": total_capacity,
+        "unused_supply_kg": unused_supply,
+        "unused_capacity_kg": unused_capacity,
+        "supply_absorption_pct": supply_absorption_pct,
+        "system_capacity_utilization_pct": system_capacity_utilization_pct,
+        "max_facility_utilization_pct": max_facility_utilization_pct,
+        "most_utilized_facility": most_utilized_facility,
+        "binding_supply_centers": binding_supply,
+        "binding_capacity_facilities": binding_capacity,
+    }
+
+
+def generate_policy_insight(opt_result, cc_df, rf_df):
+    if opt_result["status"] != "Optimal":
+        return {
+            "economic_status": "Unknown",
+            "supply_status": "Unknown",
+            "capacity_status": "Unknown",
+            "bottleneck_status": "Unknown",
+            "policy_priority": "Review input data and solver status",
+            "key_message": (
+                "The model did not return an optimal solution. Policy interpretation should "
+                "not be drawn before input data and solver status are reviewed."
+            ),
+            "recommended_next_analysis": (
+                "Review validation results, check parameter consistency, and re-run the optimization."
+            ),
+            "supply_absorption_pct": None,
+            "system_capacity_utilization_pct": None,
+            "max_facility_utilization_pct": None,
+            "binding_capacity_facilities": [],
+            "binding_supply_centers": [],
+        }
+
+    economic_summary = build_economic_summary(opt_result)
+    metrics = calculate_system_metrics(opt_result, cc_df, rf_df)
+
+    unused_supply = metrics["unused_supply_kg"]
+    unused_capacity = metrics["unused_capacity_kg"]
+    supply_absorption_pct = metrics["supply_absorption_pct"]
+    system_capacity_utilization_pct = metrics["system_capacity_utilization_pct"]
+    max_facility_utilization_pct = metrics["max_facility_utilization_pct"]
+    binding_capacity = metrics["binding_capacity_facilities"]
+
+    if unused_supply <= 1e-4 or supply_absorption_pct >= 99.9:
+        supply_status = "Full Supply Absorption"
+    else:
+        supply_status = "Partial Supply Absorption"
+
+    if binding_capacity or max_facility_utilization_pct >= 99.9:
+        capacity_status = "Capacity Bottleneck"
+        bottleneck_status = "Capacity Bottleneck Detected"
+    elif max_facility_utilization_pct >= 85.0:
+        capacity_status = "High Capacity Pressure"
+        bottleneck_status = "Potential Capacity Pressure"
+    elif unused_capacity > 1e-4:
+        capacity_status = "Capacity Reserve Available"
+        bottleneck_status = "No Capacity Bottleneck"
+    else:
+        capacity_status = "Balanced Capacity Use"
+        bottleneck_status = "No Capacity Bottleneck"
+
+    if economic_summary["economic_status"] == "Positive Net Benefit":
+        economic_sentence = (
+            "The scenario indicates a positive net economic benefit because recovered "
+            "material revenue exceeds transportation and processing costs."
+        )
+    elif economic_summary["economic_status"] == "Net Economic Cost":
+        economic_sentence = (
+            "The scenario indicates a net economic cost because transportation and "
+            "processing costs exceed recovered material revenue."
+        )
+    elif economic_summary["economic_status"] == "Break Even":
+        economic_sentence = (
+            "The scenario indicates a break-even economic condition."
+        )
+    else:
+        economic_sentence = (
+            "The economic status cannot be interpreted from the current result."
+        )
+
+    if supply_status == "Full Supply Absorption":
+        supply_sentence = (
+            f"The model allocates {supply_absorption_pct:.1f}% of available NMC battery waste supply. "
+            "This indicates that the current network can absorb the available supply in this scenario."
+        )
+    else:
+        supply_sentence = (
+            f"The model allocates {supply_absorption_pct:.1f}% of available NMC battery waste supply. "
+            f"About {unused_supply:,.0f} kg remains unallocated, indicating a potential processing or routing gap."
+        )
+
+    if capacity_status == "Capacity Bottleneck":
+        capacity_sentence = (
+            "At least one recycling facility reaches its capacity limit. This indicates a capacity bottleneck "
+            "that may require further assessment of expansion, operational scheduling, or additional processing partnerships."
+        )
+        policy_priority = "Assess capacity expansion or additional processing partnership"
+        recommended_next_analysis = (
+            "Run future demand scenarios, compare capacity expansion options, and test alternative route-cost assumptions."
+        )
+    elif capacity_status == "High Capacity Pressure":
+        capacity_sentence = (
+            f"The most utilized facility is {metrics['most_utilized_facility']} at "
+            f"{max_facility_utilization_pct:.1f}% utilization. This indicates high capacity pressure."
+        )
+        policy_priority = "Monitor facility utilization and prepare capacity contingency options"
+        recommended_next_analysis = (
+            "Run sensitivity analysis on future supply growth and test whether capacity constraints become binding."
+        )
+    elif supply_status == "Partial Supply Absorption":
+        capacity_sentence = (
+            "The network does not absorb all available supply. This may point to insufficient capacity, incomplete routing, "
+            "or cost assumptions that discourage allocation."
+        )
+        policy_priority = "Investigate unallocated supply and network coverage"
+        recommended_next_analysis = (
+            "Check route completeness, validate cost assumptions, and compare scenarios with increased capacity."
+        )
+    elif economic_summary["economic_status"] == "Net Economic Cost":
+        capacity_sentence = (
+            "The network can be operated, but the estimated economic outcome is not favorable under current parameters."
+        )
+        policy_priority = "Review cost structure and recovered material revenue assumptions"
+        recommended_next_analysis = (
+            "Run sensitivity analysis on transport cost, processing cost, and recovered material revenue."
+        )
+    else:
+        capacity_sentence = (
+            f"The system still has {unused_capacity:,.0f} kg of unused facility capacity. "
+            "Immediate capacity expansion is not the main priority in this scenario."
+        )
+        policy_priority = "Maintain collection reliability and active facility operation"
+        recommended_next_analysis = (
+            "Monitor future battery waste growth and update the scenario when supply projections change."
+        )
+
+    key_message = " ".join([economic_sentence, supply_sentence, capacity_sentence])
+
+    return {
+        "economic_status": economic_summary["economic_status"],
+        "supply_status": supply_status,
+        "capacity_status": capacity_status,
+        "bottleneck_status": bottleneck_status,
+        "policy_priority": policy_priority,
+        "key_message": key_message,
+        "recommended_next_analysis": recommended_next_analysis,
+        "supply_absorption_pct": supply_absorption_pct,
+        "system_capacity_utilization_pct": system_capacity_utilization_pct,
+        "max_facility_utilization_pct": max_facility_utilization_pct,
+        "binding_capacity_facilities": binding_capacity,
+        "binding_supply_centers": metrics["binding_supply_centers"],
+    }
+
+
 def generate_interpretation(opt_result, cc_df, rf_df):
     if opt_result["status"] != "Optimal":
         return (
@@ -229,49 +443,13 @@ def generate_interpretation(opt_result, cc_df, rf_df):
     economic_summary = build_economic_summary(opt_result)
     obj = float(opt_result["objective_value"])
     net_value_abs = economic_summary["net_economic_value_abs"]
-    alloc_vals = list(opt_result["allocations"].values())
-    total_alloc = sum(alloc_vals)
-    total_supply = float(cc_df["supply_kg"].sum())
-    total_capacity = float(rf_df["capacity_kg"].sum())
-    unused_supply = total_supply - total_alloc
-    unused_capacity = total_capacity - total_alloc
-    supply_usage_pct = (total_alloc / total_supply * 100) if total_supply > 0 else 0.0
-
-    rf_ids = opt_result["rf_ids"]
-    cc_ids = opt_result["cc_ids"]
-    rf_name_map = dict(zip(rf_df["rf_id"], rf_df["name"])) if "name" in rf_df.columns else {}
-    cap_map = dict(zip(rf_df["rf_id"], rf_df["capacity_kg"].astype(float)))
-
-    rf_util_parts = []
-    for j in rf_ids:
-        total_j = sum(opt_result["allocations"].get((i, j), 0.0) for i in cc_ids)
-        cap_j = cap_map.get(j, 0.0)
-        util_pct = (total_j / cap_j * 100) if cap_j > 0 else 0.0
-        name_j = rf_name_map.get(j, j)
-        rf_util_parts.append(f"{name_j} is used at {util_pct:.1f}% capacity ({total_j:,.0f} kg)")
-
-    rf_util_text = "; ".join(rf_util_parts)
-
-    binding_supply = [
-        i for i in cc_ids
-        if opt_result["supply_slacks"].get(i, 1) is not None
-        and abs(opt_result["supply_slacks"].get(i, 1)) < 1e-4
-    ]
-    binding_cap = [
-        j for j in rf_ids
-        if opt_result["capacity_slacks"].get(j, 1) is not None
-        and abs(opt_result["capacity_slacks"].get(j, 1)) < 1e-4
-    ]
-
-    cc_name_map = dict(zip(cc_df["cc_id"], cc_df["name"])) if "name" in cc_df.columns else {}
-    binding_supply_names = [cc_name_map.get(i, i) for i in binding_supply]
-    binding_cap_names = [rf_name_map.get(j, j) for j in binding_cap]
+    metrics = calculate_system_metrics(opt_result, cc_df, rf_df)
 
     lines = [
         "The optimization was successfully solved with Optimal status using the CBC solver.",
-        f"The total allocated NMC battery waste volume is {total_alloc:,.0f} kg out of {total_supply:,.0f} kg of available supply.",
-        f"The supply absorption rate is {supply_usage_pct:.1f}%, with {unused_supply:,.0f} kg of unused supply.",
-        f"Facility utilization: {rf_util_text}.",
+        f"The total allocated NMC battery waste volume is {metrics['total_allocated_kg']:,.0f} kg out of {metrics['total_supply_kg']:,.0f} kg of available supply.",
+        f"The supply absorption rate is {metrics['supply_absorption_pct']:.1f}%, with {metrics['unused_supply_kg']:,.0f} kg of unused supply.",
+        f"The system capacity utilization rate is {metrics['system_capacity_utilization_pct']:.1f}%, with {metrics['unused_capacity_kg']:,.0f} kg of unused capacity.",
         f"The model objective value is Rp {obj:,.0f} per year as the minimum net cost objective.",
     ]
 
@@ -290,22 +468,16 @@ def generate_interpretation(opt_result, cc_df, rf_df):
             "The objective value is zero, so the scenario is economically at break-even."
         )
 
-    if binding_supply_names:
+    if metrics["binding_supply_centers"]:
         lines.append(
-            f"The binding supply constraints are {', '.join(binding_supply_names)}. "
+            f"The binding supply constraints are {', '.join(metrics['binding_supply_centers'])}. "
             "All available supply from these collection centers is fully allocated."
         )
 
-    if binding_cap_names:
+    if metrics["binding_capacity_facilities"]:
         lines.append(
-            f"The binding capacity constraints are {', '.join(binding_cap_names)}. "
+            f"The binding capacity constraints are {', '.join(metrics['binding_capacity_facilities'])}. "
             "These facilities operate at full capacity and act as bottlenecks."
-        )
-
-    if total_capacity > total_supply:
-        lines.append(
-            f"Total facility capacity is {total_capacity:,.0f} kg, which exceeds total supply. "
-            f"The system has {unused_capacity:,.0f} kg of unused capacity."
         )
 
     return " ".join(lines)
@@ -318,6 +490,7 @@ def process_all_results(opt_result, cc_df, rf_df, tc_df):
     route_table = build_route_allocation_table(opt_result, cc_df, rf_df, tc_df)
     constraint_table = build_constraint_table(opt_result, cc_df, rf_df)
     economic_summary = build_economic_summary(opt_result)
+    policy_insight = generate_policy_insight(opt_result, cc_df, rf_df)
     interpretation = generate_interpretation(opt_result, cc_df, rf_df)
 
     return {
@@ -327,5 +500,6 @@ def process_all_results(opt_result, cc_df, rf_df, tc_df):
         "route_table": route_table,
         "constraint_table": constraint_table,
         "economic_summary": economic_summary,
+        "policy_insight": policy_insight,
         "interpretation": interpretation,
     }

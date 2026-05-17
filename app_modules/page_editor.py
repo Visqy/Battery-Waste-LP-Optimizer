@@ -1,5 +1,5 @@
 import pandas as pd
-from shiny import module, ui, render, reactive, req
+from shiny import module, ui, render, reactive
 from battery_optimizer.config import TRANSPORT_RATE_RP_PER_KG_PER_KM
 from battery_optimizer.default_data import load_default_data
 
@@ -9,33 +9,68 @@ def editor_ui():
     return ui.nav_panel(
         "Parameter Editor",
         ui.div(
-            ui.h2("Parameter Editor"),
+            ui.h2("Scenario Parameter Editor"),
             ui.p(
-                "Edit model parameters below. Click 'Apply Changes' in each section "
-                "to save updates to the active dataset. The model formulation is locked "
-                "and cannot be modified here."
+                "Edit the active scenario directly in the application. These changes affect the next validation "
+                "and optimization run. The mathematical model remains locked."
+            ),
+            ui.div(
+                ui.tags.strong("Important: "),
+                ui.span(
+                    "After applying any parameter change, previous validation and optimization results are cleared. "
+                    "Run validation again before using the scenario for decision review."
+                ),
+                class_="alert alert-info",
             ),
             ui.layout_columns(
-                ui.input_action_button("reload_form", "Reload Form from Current Data", class_="btn-secondary"),
-                ui.input_action_button("reset_defaults", "Reset All to Defaults", class_="btn-warning"),
+                ui.input_action_button(
+                    "reload_form",
+                    "Reload Form from Active Scenario",
+                    class_="btn-secondary",
+                ),
+                ui.input_action_button(
+                    "reset_defaults",
+                    "Reset Scenario to Default Data",
+                    class_="btn-warning",
+                ),
                 col_widths=[3, 3],
             ),
             ui.hr(),
             ui.h3("Collection Centers"),
+            ui.p(
+                "Edit collection center names, provinces, and available annual NMC battery waste supply.",
+                style="color: #555;",
+            ),
             ui.output_ui("cc_editor"),
-            ui.input_action_button("apply_cc", "Apply Collection Center Changes", class_="btn-primary"),
+            ui.input_action_button(
+                "apply_cc",
+                "Apply Collection Center Changes",
+                class_="btn-primary",
+            ),
             ui.hr(),
             ui.h3("Recycling Facilities"),
+            ui.p(
+                "Edit facility capacity, processing cost, and recovered material revenue assumptions.",
+                style="color: #555;",
+            ),
             ui.output_ui("rf_editor"),
-            ui.input_action_button("apply_rf", "Apply Recycling Facility Changes", class_="btn-primary"),
+            ui.input_action_button(
+                "apply_rf",
+                "Apply Recycling Facility Changes",
+                class_="btn-primary",
+            ),
             ui.hr(),
             ui.h3("Transport Costs"),
             ui.p(
-                "Enter transport cost in Rp/kg for each collection center - recycling facility pair. "
-                "Distance (km) is computed as transport_cost / 20 for reference."
+                "Enter transport cost in Rp/kg for each collection center and recycling facility pair. "
+                "Distance is estimated as transport_cost / 20 for reference only."
             ),
             ui.output_ui("tc_editor"),
-            ui.input_action_button("apply_tc", "Apply Transport Cost Changes", class_="btn-primary"),
+            ui.input_action_button(
+                "apply_tc",
+                "Apply Transport Cost Changes",
+                class_="btn-primary",
+            ),
             ui.output_ui("editor_status"),
             style="padding: 1rem;",
         ),
@@ -51,6 +86,7 @@ def editor_server(input, output, session, state):
     @reactive.event(input.reload_form)
     def _reload():
         form_trigger.set(form_trigger() + 1)
+        status_message.set("Form reloaded from the active scenario.")
 
     @reactive.effect
     @reactive.event(input.reset_defaults)
@@ -64,7 +100,7 @@ def editor_server(input, output, session, state):
         state.optimization_result.set(None)
         state.processed_results.set(None)
         form_trigger.set(form_trigger() + 1)
-        status_message.set("All parameters reset to default values.")
+        status_message.set("Scenario reset to default baseline data.")
 
     @output
     @render.ui
@@ -74,7 +110,7 @@ def editor_server(input, output, session, state):
             cc_df = state.collection_centers()
 
         rows = []
-        for idx, row in cc_df.iterrows():
+        for _, row in cc_df.iterrows():
             cc_id = str(row["cc_id"])
             safe_id = cc_id.replace("-", "_")
             rows.append(
@@ -115,7 +151,7 @@ def editor_server(input, output, session, state):
             rf_df = state.recycling_facilities()
 
         rows = []
-        for idx, row in rf_df.iterrows():
+        for _, row in rf_df.iterrows():
             rf_id = str(row["rf_id"])
             safe_id = rf_id.replace("-", "_")
             rows.append(
@@ -149,7 +185,7 @@ def editor_server(input, output, session, state):
                             ),
                             ui.input_numeric(
                                 f"rf_rev_{safe_id}",
-                                "Recovery Revenue (Rp/kg)",
+                                "Recovered Material Revenue (Rp/kg)",
                                 value=float(row.get("recovery_revenue_rp_kg", 0)),
                                 min=0,
                                 step=100,
@@ -178,20 +214,21 @@ def editor_server(input, output, session, state):
         for _, row in tc_df.iterrows():
             tc_lookup[(str(row["cc_id"]), str(row["rf_id"]))] = float(row["transport_cost_rp_kg"])
 
-        header_cells = [ui.tags.th("CC / RF")] + [ui.tags.th(str(j)) for j in rf_ids]
+        header_cells = [ui.tags.th("CC / RF")] + [ui.tags.th(str(rf_id)) for rf_id in rf_ids]
         header_row = ui.tags.tr(*header_cells)
 
         body_rows = []
-        for i in cc_ids:
-            safe_i = str(i).replace("-", "_")
-            cells = [ui.tags.td(ui.tags.strong(str(i)))]
-            for j in rf_ids:
-                safe_j = str(j).replace("-", "_")
-                current_val = tc_lookup.get((str(i), str(j)), 0.0)
+        for cc_id in cc_ids:
+            safe_cc = str(cc_id).replace("-", "_")
+            cells = [ui.tags.td(ui.tags.strong(str(cc_id)))]
+
+            for rf_id in rf_ids:
+                safe_rf = str(rf_id).replace("-", "_")
+                current_val = tc_lookup.get((str(cc_id), str(rf_id)), 0.0)
                 cells.append(
                     ui.tags.td(
                         ui.input_numeric(
-                            f"tc_{safe_i}_{safe_j}",
+                            f"tc_{safe_cc}_{safe_rf}",
                             label=None,
                             value=current_val,
                             min=0,
@@ -200,6 +237,7 @@ def editor_server(input, output, session, state):
                         )
                     )
                 )
+
             body_rows.append(ui.tags.tr(*cells))
 
         return ui.div(
@@ -218,9 +256,10 @@ def editor_server(input, output, session, state):
             cc_df = state.collection_centers().copy()
 
         updated_rows = []
-        for idx, row in cc_df.iterrows():
+        for _, row in cc_df.iterrows():
             cc_id = str(row["cc_id"])
             safe_id = cc_id.replace("-", "_")
+
             try:
                 new_name = input[f"cc_name_{safe_id}"]()
                 new_province = input[f"cc_province_{safe_id}"]()
@@ -243,7 +282,7 @@ def editor_server(input, output, session, state):
         state.validation_result.set(None)
         state.optimization_result.set(None)
         state.processed_results.set(None)
-        status_message.set("Collection center parameters updated.")
+        status_message.set("Collection center parameters updated. Run validation before optimization.")
 
     @reactive.effect
     @reactive.event(input.apply_rf)
@@ -252,9 +291,10 @@ def editor_server(input, output, session, state):
             rf_df = state.recycling_facilities().copy()
 
         updated_rows = []
-        for idx, row in rf_df.iterrows():
+        for _, row in rf_df.iterrows():
             rf_id = str(row["rf_id"])
             safe_id = rf_id.replace("-", "_")
+
             try:
                 new_name = input[f"rf_name_{safe_id}"]()
                 new_province = input[f"rf_province_{safe_id}"]()
@@ -283,7 +323,7 @@ def editor_server(input, output, session, state):
         state.validation_result.set(None)
         state.optimization_result.set(None)
         state.processed_results.set(None)
-        status_message.set("Recycling facility parameters updated.")
+        status_message.set("Recycling facility parameters updated. Run validation before optimization.")
 
     @reactive.effect
     @reactive.event(input.apply_tc)
@@ -296,19 +336,23 @@ def editor_server(input, output, session, state):
         rf_ids = rf_df["rf_id"].tolist()
 
         updated_rows = []
-        for i in cc_ids:
-            safe_i = str(i).replace("-", "_")
-            for j in rf_ids:
-                safe_j = str(j).replace("-", "_")
+        for cc_id in cc_ids:
+            safe_cc = str(cc_id).replace("-", "_")
+
+            for rf_id in rf_ids:
+                safe_rf = str(rf_id).replace("-", "_")
+
                 try:
-                    cost_val = float(input[f"tc_{safe_i}_{safe_j}"]())
+                    cost_val = float(input[f"tc_{safe_cc}_{safe_rf}"]())
                 except Exception:
                     cost_val = 0.0
+
                 dist_val = round(cost_val / TRANSPORT_RATE_RP_PER_KG_PER_KM)
+
                 updated_rows.append(
                     {
-                        "cc_id": str(i),
-                        "rf_id": str(j),
+                        "cc_id": str(cc_id),
+                        "rf_id": str(rf_id),
                         "transport_cost_rp_kg": cost_val,
                         "distance_km": dist_val,
                     }
@@ -318,7 +362,7 @@ def editor_server(input, output, session, state):
         state.validation_result.set(None)
         state.optimization_result.set(None)
         state.processed_results.set(None)
-        status_message.set("Transport cost parameters updated.")
+        status_message.set("Transport cost parameters updated. Run validation before optimization.")
 
     @output
     @render.ui
@@ -326,6 +370,7 @@ def editor_server(input, output, session, state):
         msg = status_message()
         if not msg:
             return ui.div()
+
         return ui.div(
             ui.div(msg, class_="alert alert-success", style="margin-top: 1rem;")
         )

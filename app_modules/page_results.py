@@ -37,6 +37,12 @@ def format_rp_value(value):
     return f"Rp {float(value):,.0f}"
 
 
+def format_percent(value):
+    if value is None:
+        return "N/A"
+    return f"{float(value):.1f}%"
+
+
 ALLOCATION_MATRIX_LABELS = {
     "cc_id": "Collection Center ID",
     "total_allocated_kg": "Total Allocated (kg/year)",
@@ -72,7 +78,7 @@ def results_ui():
     return ui.nav_panel(
         "Results",
         ui.div(
-            ui.h2("Optimization Results"),
+            ui.h2("Decision Results"),
             ui.output_ui("results_content"),
             style="padding: 1rem;",
         ),
@@ -90,7 +96,7 @@ def results_server(input, output, session, state):
         if opt_result is None:
             return ui.div(
                 ui.div(
-                    "No optimization results available. Run optimization first.",
+                    "No optimization results available. Run validation and optimization first.",
                     class_="alert alert-info",
                 )
             )
@@ -98,7 +104,8 @@ def results_server(input, output, session, state):
         if opt_result["status"] != "Optimal":
             return ui.div(
                 ui.div(
-                    f"Solver status: {opt_result['status']}. Optimal solution was not found.",
+                    f"Solver status: {opt_result['status']}. An optimal solution was not found. "
+                    "Use this status only as a diagnostic signal, not as a policy conclusion.",
                     class_="alert alert-warning",
                 )
             )
@@ -115,6 +122,8 @@ def results_server(input, output, session, state):
         runtime = opt_result["runtime"]
 
         economic_summary = processed.get("economic_summary", {})
+        policy_insight = processed.get("policy_insight", {})
+
         economic_status = economic_summary.get("economic_status", "Unknown")
         economic_value_label = economic_summary.get("economic_value_label", "Estimated Net Economic Value")
         economic_value_abs = economic_summary.get("net_economic_value_abs")
@@ -122,15 +131,18 @@ def results_server(input, output, session, state):
         economic_badge_class = economic_summary.get("economic_badge_class", "badge bg-secondary")
         economic_alert_class = economic_summary.get("economic_alert_class", "alert alert-secondary")
 
+        supply_status = policy_insight.get("supply_status", "Unknown")
+        capacity_status = policy_insight.get("capacity_status", "Unknown")
+        policy_priority = policy_insight.get("policy_priority", "Review scenario results")
+        key_message = policy_insight.get("key_message", "")
+        recommended_next_analysis = policy_insight.get("recommended_next_analysis", "")
+        supply_absorption_pct = policy_insight.get("supply_absorption_pct")
+        system_capacity_utilization_pct = policy_insight.get("system_capacity_utilization_pct")
+        max_facility_utilization_pct = policy_insight.get("max_facility_utilization_pct")
+
         return ui.div(
-            ui.h3("KPI Summary"),
+            ui.h3("Executive Decision Summary"),
             ui.layout_columns(
-                ui.card(
-                    ui.card_header("Solver Status"),
-                    ui.card_body(
-                        ui.div("Optimal", class_="badge bg-success", style="font-size: 1.1em;")
-                    ),
-                ),
                 ui.card(
                     ui.card_header("Economic Status"),
                     ui.card_body(
@@ -138,19 +150,52 @@ def results_server(input, output, session, state):
                     ),
                 ),
                 ui.card(
+                    ui.card_header("Supply Status"),
+                    ui.card_body(
+                        ui.div(supply_status, class_="badge bg-primary", style="font-size: 1.1em;")
+                    ),
+                ),
+                ui.card(
+                    ui.card_header("Capacity Status"),
+                    ui.card_body(
+                        ui.div(capacity_status, class_="badge bg-info text-dark", style="font-size: 1.1em;")
+                    ),
+                ),
+                ui.card(
+                    ui.card_header("Policy Priority"),
+                    ui.card_body(
+                        ui.p(policy_priority, style="font-weight: bold; margin-bottom: 0;")
+                    ),
+                ),
+                col_widths=[3, 3, 3, 3],
+            ),
+            ui.div(
+                ui.h4("Policy Insight"),
+                ui.p(key_message),
+                ui.tags.strong("Recommended next analysis: "),
+                ui.span(recommended_next_analysis),
+                class_="alert alert-primary",
+                style="margin-top: 1rem;",
+            ),
+            ui.h3("Key Indicators", style="margin-top: 1.5rem;"),
+            ui.layout_columns(
+                ui.card(
                     ui.card_header(economic_value_label),
                     ui.card_body(
                         ui.p(format_rupiah_abs(economic_value_abs), style="font-weight: bold; font-size: 1.1em;")
                     ),
                 ),
                 ui.card(
-                    ui.card_header("Minimum Net Cost Objective"),
-                    ui.card_body(
-                        ui.p(format_rupiah(obj), style="font-weight: bold; font-size: 1.1em;"),
-                        ui.tags.small(
-                            "A negative objective value indicates a positive net benefit when recovered material revenue exceeds total cost."
-                        ),
-                    ),
+                    ui.card_header("Supply Absorption"),
+                    ui.card_body(ui.p(format_percent(supply_absorption_pct), style="font-weight: bold; font-size: 1.1em;")),
+                ),
+                ui.card(
+                    ui.card_header("System Capacity Use"),
+                    ui.card_body(ui.p(format_percent(system_capacity_utilization_pct), style="font-weight: bold; font-size: 1.1em;")),
+                ),
+                ui.card(
+                    ui.card_header("Highest Facility Use"),
+                    ui.card_body(ui.p(format_percent(max_facility_utilization_pct), style="font-weight: bold; font-size: 1.1em;")),
                 ),
                 col_widths=[3, 3, 3, 3],
             ),
@@ -178,6 +223,16 @@ def results_server(input, output, session, state):
                 class_=economic_alert_class,
                 style="margin-top: 1rem;",
             ),
+            ui.h3("Technical Objective", style="margin-top: 1.5rem;"),
+            ui.card(
+                ui.card_header("Minimum Net Cost Objective"),
+                ui.card_body(
+                    ui.p(format_rupiah(obj), style="font-weight: bold; font-size: 1.1em;"),
+                    ui.tags.small(
+                        "This technical value is the LP objective. A negative value indicates a positive net benefit when recovered material revenue exceeds total cost."
+                    ),
+                ),
+            ),
             ui.h3("Allocation Matrix (kg/year)", style="margin-top: 1.5rem;"),
             ui.output_table("alloc_matrix_table"),
             ui.h3("Route Allocation Detail", style="margin-top: 1.5rem;"),
@@ -196,7 +251,7 @@ def results_server(input, output, session, state):
             ),
             ui.h3("Constraint Analysis", style="margin-top: 1.5rem;"),
             ui.output_table("constraint_table"),
-            ui.h3("Automatic Interpretation", style="margin-top: 1.5rem;"),
+            ui.h3("Technical Interpretation", style="margin-top: 1.5rem;"),
             ui.output_ui("interpretation_block"),
             ui.div(
                 ui.download_button("download_results", "Export Results to Excel (.xlsx)", class_="btn-success"),
@@ -400,7 +455,7 @@ def results_server(input, output, session, state):
 
         with open(filepath, "rb") as f:
             yield f.read()
-    
+
     @render.download(filename="current_configuration.xlsx")
     def download_configuration():
         cc = state.collection_centers()

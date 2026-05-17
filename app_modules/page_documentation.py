@@ -13,24 +13,184 @@ def formula_block(content):
     )
 
 
+def guide_card(title, body):
+    return ui.card(
+        ui.card_header(title),
+        ui.card_body(body),
+        style="margin-bottom: 0.75rem;",
+    )
+
+
 @module.ui
 def documentation_ui():
     return ui.nav_panel(
         "Documentation",
         ui.div(
-            ui.h2("Model Documentation"),
+            ui.h2("Documentation and User Guide"),
+            ui.p(
+                "This page combines model documentation, user guidance, and result interpretation "
+                "guidance for researchers, technical users, and policy stakeholders."
+            ),
             ui.navset_tab(
+                ui.nav_panel(
+                    "User Guide",
+                    ui.div(
+                        ui.h3("Recommended Workflow"),
+                        ui.p(
+                            "Use this workflow when preparing and evaluating a recycling supply chain scenario."
+                        ),
+                        ui.tags.ol(
+                            ui.tags.li("Open the application and review the Home page to understand the decision context."),
+                            ui.tags.li("Use the default baseline data or download the Excel input template."),
+                            ui.tags.li("Upload a completed Excel input file or edit parameters directly in the Parameter Editor."),
+                            ui.tags.li("Run validation before optimization."),
+                            ui.tags.li("Fix all validation errors if any are found."),
+                            ui.tags.li("Run optimization using the locked LP model."),
+                            ui.tags.li("Review the Executive Decision Summary in the Results page."),
+                            ui.tags.li("Review Policy Insight and Recommended Next Analysis before inspecting technical tables."),
+                            ui.tags.li("Export the result workbook for documentation and discussion."),
+                            ui.tags.li("Export the current configuration if the scenario should be reused later."),
+                        ),
+                        ui.h3("Page-by-Page Use"),
+                        guide_card(
+                            "Home",
+                            ui.tags.ul(
+                                ui.tags.li("Explains the decision context and key questions."),
+                                ui.tags.li("Summarizes the model scope and stakeholder workflow."),
+                                ui.tags.li("Use this page to check whether the software fits the intended decision problem."),
+                            ),
+                        ),
+                        guide_card(
+                            "Template",
+                            ui.tags.ul(
+                                ui.tags.li("Downloads the Excel input template."),
+                                ui.tags.li("Shows the required sheet structure and column definitions."),
+                                ui.tags.li("Use this page when preparing a new scenario outside the GUI."),
+                            ),
+                        ),
+                        guide_card(
+                            "Upload Data",
+                            ui.tags.ul(
+                                ui.tags.li("Uploads a completed Excel scenario file."),
+                                ui.tags.li("Replaces the active dataset with uploaded data."),
+                                ui.tags.li("Shows a preview of collection centers, recycling facilities, and transport costs."),
+                            ),
+                        ),
+                        guide_card(
+                            "Parameter Editor",
+                            ui.tags.ul(
+                                ui.tags.li("Allows direct editing of supply, capacity, cost, revenue, and route parameters."),
+                                ui.tags.li("The mathematical model remains locked."),
+                                ui.tags.li("After editing parameters, run validation again before optimization."),
+                            ),
+                        ),
+                        guide_card(
+                            "Validation",
+                            ui.tags.ul(
+                                ui.tags.li("Checks whether the active dataset is complete and valid."),
+                                ui.tags.li("Optimization should not be used if validation fails."),
+                                ui.tags.li("Warnings are informational and should still be reviewed."),
+                            ),
+                        ),
+                        guide_card(
+                            "Optimization",
+                            ui.tags.ul(
+                                ui.tags.li("Runs the locked LP model using PuLP and the CBC solver."),
+                                ui.tags.li("Shows solver status, objective value, and runtime."),
+                                ui.tags.li("A non-optimal solver status should not be used as a policy conclusion."),
+                            ),
+                        ),
+                        guide_card(
+                            "Results",
+                            ui.tags.ul(
+                                ui.tags.li("Shows the executive decision summary, policy insight, key indicators, and technical results."),
+                                ui.tags.li("Use the decision summary before reading allocation and constraint tables."),
+                                ui.tags.li("Export results and current configuration from this page."),
+                            ),
+                        ),
+                    ),
+                ),
+                ui.nav_panel(
+                    "Decision Interpretation Guide",
+                    ui.div(
+                        ui.h3("How to Read the Results"),
+                        ui.p(
+                            "The Results page is designed to show decision-oriented information first, "
+                            "followed by technical optimization details."
+                        ),
+                        ui.h4("Economic Status"),
+                        ui.tags.ul(
+                            ui.tags.li("Positive Net Benefit means recovered material revenue exceeds transportation and processing costs."),
+                            ui.tags.li("Net Economic Cost means transportation and processing costs exceed recovered material revenue."),
+                            ui.tags.li("Break Even means total cost and recovered material revenue are balanced."),
+                        ),
+                        ui.h4("Minimum Net Cost Objective"),
+                        ui.HTML(
+                            r"""
+                            <p>
+                            The model minimizes:
+                            \[
+                            \min Z =
+                            \sum_{i \in I}
+                            \sum_{j \in J}
+                            \left(C_{ij} + P_{j} - R_{j}\right)x_{ij}
+                            \]
+                            </p>
+                            <p>
+                            A negative objective value does not indicate a loss. It indicates
+                            a positive net benefit when recovered material revenue is larger
+                            than transportation and processing costs.
+                            </p>
+                            """
+                        ),
+                        ui.h4("Supply Status"),
+                        ui.tags.ul(
+                            ui.tags.li("Full Supply Absorption means nearly all available supply is allocated."),
+                            ui.tags.li("Partial Supply Absorption means some supply remains unallocated."),
+                            ui.tags.li("Unallocated supply may indicate a capacity gap, route issue, or cost assumption that limits allocation."),
+                        ),
+                        ui.h4("Capacity Status"),
+                        ui.tags.ul(
+                            ui.tags.li("Capacity Reserve Available means the system has unused processing capacity."),
+                            ui.tags.li("High Capacity Pressure means at least one facility is heavily utilized."),
+                            ui.tags.li("Capacity Bottleneck means at least one facility reaches its capacity limit."),
+                        ),
+                        ui.h4("Policy Priority"),
+                        ui.p(
+                            "Policy Priority translates the optimization result into a short decision-support message. "
+                            "It does not prescribe policy automatically. It identifies what should receive further attention."
+                        ),
+                        ui.h4("Recommended Next Analysis"),
+                        ui.p(
+                            "Recommended Next Analysis suggests the next scenario or sensitivity test. "
+                            "Examples include future supply growth, capacity expansion, cost variation, or recovered material revenue changes."
+                        ),
+                        ui.h4("Constraint Analysis"),
+                        ui.tags.ul(
+                            ui.tags.li("Slack shows unused supply or unused capacity in a constraint."),
+                            ui.tags.li("A binding constraint has nearly zero slack."),
+                            ui.tags.li("A binding capacity constraint may indicate a facility bottleneck."),
+                            ui.tags.li("Shadow prices indicate the marginal value of relaxing a constraint when available from the solver."),
+                        ),
+                    ),
+                ),
                 ui.nav_panel(
                     "Overview",
                     ui.div(
                         ui.h3("Software Overview"),
                         ui.p(
-                            "This software is a GUI-based decision support tool for optimizing "
+                            "This software is a GUI-based decision support tool for evaluating "
                             "the supply chain of Nickel-Manganese-Cobalt (NMC) electric vehicle "
                             "battery recycling on Java Island, Indonesia."
                         ),
                         ui.p(f"Version: {APP_VERSION}"),
                         ui.p(f"Reference: {REFERENCE}"),
+                        ui.h3("Decision-Support Role"),
+                        ui.p(
+                            "The software helps users evaluate allocation feasibility, facility capacity, "
+                            "economic outcome, and policy-relevant indicators under a selected scenario. "
+                            "It supports decision analysis but does not replace policy judgment."
+                        ),
                         ui.h3("Model Origin"),
                         ui.HTML(
                             r"""
@@ -99,7 +259,7 @@ def documentation_ui():
                             ui.tags.tbody(
                                 ui.tags.tr(ui.tags.td(math_cell(r"\(C_{ij}\)")), ui.tags.td("Rp/kg"), ui.tags.td("Transport cost from collection center i to recycling facility j"), ui.tags.td("Yes")),
                                 ui.tags.tr(ui.tags.td(math_cell(r"\(P_{j}\)")), ui.tags.td("Rp/kg"), ui.tags.td("Processing cost per kg at recycling facility j"), ui.tags.td("Yes")),
-                                ui.tags.tr(ui.tags.td(math_cell(r"\(R_{j}\)")), ui.tags.td("Rp/kg"), ui.tags.td("Recovery revenue per kg from recycling facility j"), ui.tags.td("Yes")),
+                                ui.tags.tr(ui.tags.td(math_cell(r"\(R_{j}\)")), ui.tags.td("Rp/kg"), ui.tags.td("Recovered material revenue per kg from recycling facility j"), ui.tags.td("Yes")),
                                 ui.tags.tr(ui.tags.td(math_cell(r"\(S_{i}\)")), ui.tags.td("kg/year"), ui.tags.td("Annual battery waste supply at collection center i"), ui.tags.td("Yes")),
                                 ui.tags.tr(ui.tags.td(math_cell(r"\(Cap_{j}\)")), ui.tags.td("kg/year"), ui.tags.td("Annual processing capacity of recycling facility j"), ui.tags.td("Yes")),
                                 ui.tags.tr(ui.tags.td(math_cell(r"\(y_{j}\)")), ui.tags.td("Binary"), ui.tags.td("Facility activation decision, locked at 1 for all j"), ui.tags.td("No, locked at 1")),
@@ -137,7 +297,7 @@ def documentation_ui():
                     "Objective and Constraints",
                     ui.div(
                         ui.h3("Objective Function"),
-                        ui.p("Minimize total net operating cost:"),
+                        ui.p("The LP model minimizes total net operating cost:"),
                         formula_block(
                             r"""
                             \[
@@ -153,10 +313,9 @@ def documentation_ui():
                             <p>
                             The net cost coefficient is defined as
                             \( \tilde{c}_{ij} = C_{ij} + P_{j} - R_{j} \).
-                            It is typically negative because
-                            \(R_{j}\) is greater than \(P_{j} + C_{ij}\).
-                            This means the optimizer will allocate as much volume as possible,
-                            subject to supply and capacity constraints.
+                            If recovered material revenue is greater than transportation and
+                            processing costs, this coefficient can be negative. In that case,
+                            a negative model objective represents positive net economic benefit.
                             </p>
                             """
                         ),
@@ -273,6 +432,7 @@ def documentation_ui():
                             ui.tags.li("Uncertainty and stochastic supply variations are not modeled."),
                             ui.tags.li("Multi-period planning is not supported."),
                             ui.tags.li("Intermediate processing nodes, such as sortation centers, are not modeled."),
+                            ui.tags.li("Policy insight is rule-based and should be interpreted as decision support, not automatic policy prescription."),
                         ),
                         ui.h3("Future Development"),
                         ui.HTML(

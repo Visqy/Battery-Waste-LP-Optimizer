@@ -10,6 +10,7 @@ RUPIAH_FORMAT = '[$Rp-421] #,##0.00'
 NUMBER_FORMAT = '#,##0.00'
 INTEGER_FORMAT = '#,##0'
 SECONDS_FORMAT = '0.0000'
+PERCENT_FORMAT = '0.00'
 
 
 ALLOCATION_MATRIX_LABELS = {
@@ -75,7 +76,7 @@ def set_column_widths(worksheet):
             value = cell.value
             if value is not None:
                 max_length = max(max_length, len(str(value)))
-        worksheet.column_dimensions[column_letter].width = min(max_length + 4, 45)
+        worksheet.column_dimensions[column_letter].width = min(max_length + 4, 50)
 
 
 def get_header_map(worksheet):
@@ -108,6 +109,8 @@ def apply_summary_format(worksheet):
             value_cell.number_format = RUPIAH_FORMAT
         elif "(kg)" in metric_text:
             value_cell.number_format = NUMBER_FORMAT
+        elif "(%)" in metric_text:
+            value_cell.number_format = PERCENT_FORMAT
         elif "seconds" in metric_text:
             value_cell.number_format = SECONDS_FORMAT
 
@@ -142,6 +145,25 @@ def prepare_constraint_table(processed):
     return df.rename(columns=CONSTRAINT_TABLE_LABELS)
 
 
+def prepare_policy_summary(processed):
+    policy = processed.get("policy_insight", {})
+    rows = [
+        ["Economic Status", policy.get("economic_status", "N/A")],
+        ["Supply Status", policy.get("supply_status", "N/A")],
+        ["Capacity Status", policy.get("capacity_status", "N/A")],
+        ["Bottleneck Status", policy.get("bottleneck_status", "N/A")],
+        ["Policy Priority", policy.get("policy_priority", "N/A")],
+        ["Supply Absorption (%)", policy.get("supply_absorption_pct")],
+        ["System Capacity Utilization (%)", policy.get("system_capacity_utilization_pct")],
+        ["Maximum Facility Utilization (%)", policy.get("max_facility_utilization_pct")],
+        ["Binding Capacity Facilities", ", ".join(policy.get("binding_capacity_facilities", []))],
+        ["Binding Supply Centers", ", ".join(policy.get("binding_supply_centers", []))],
+        ["Policy Insight", policy.get("key_message", "N/A")],
+        ["Recommended Next Analysis", policy.get("recommended_next_analysis", "N/A")],
+    ]
+    return pd.DataFrame(rows, columns=["Metric", "Value"])
+
+
 def export_results_to_excel(opt_result, processed, cc_df, rf_df, tc_df, filepath=None):
     if filepath is None:
         filepath = RESULTS_PATH
@@ -151,6 +173,7 @@ def export_results_to_excel(opt_result, processed, cc_df, rf_df, tc_df, filepath
         os.makedirs(directory, exist_ok=True)
 
     economic_summary = processed.get("economic_summary", build_economic_summary(opt_result))
+    policy_summary = prepare_policy_summary(processed)
 
     total_supply = float(cc_df["supply_kg"].sum())
     total_capacity = float(rf_df["capacity_kg"].sum())
@@ -186,6 +209,7 @@ def export_results_to_excel(opt_result, processed, cc_df, rf_df, tc_df, filepath
     )
 
     with pd.ExcelWriter(filepath, engine="openpyxl") as writer:
+        policy_summary.to_excel(writer, sheet_name="policy_summary", index=False)
         summary_df.to_excel(writer, sheet_name="summary", index=False)
         alloc_matrix.to_excel(writer, sheet_name="allocation_matrix", index=False)
         route_table.to_excel(writer, sheet_name="route_allocation", index=False)
@@ -198,6 +222,7 @@ def export_results_to_excel(opt_result, processed, cc_df, rf_df, tc_df, filepath
             apply_header_style(worksheet)
             set_column_widths(worksheet)
 
+        apply_summary_format(writer.sheets["policy_summary"])
         apply_summary_format(writer.sheets["summary"])
 
         apply_format_to_columns(
@@ -238,7 +263,7 @@ def export_results_to_excel(opt_result, processed, cc_df, rf_df, tc_df, filepath
         apply_format_to_columns(
             writer.sheets["facility_utilization"],
             ["Utilization (%)"],
-            NUMBER_FORMAT,
+            PERCENT_FORMAT,
         )
 
         apply_format_to_columns(
@@ -247,9 +272,14 @@ def export_results_to_excel(opt_result, processed, cc_df, rf_df, tc_df, filepath
                 "Supply (kg/year)",
                 "Allocated Volume (kg/year)",
                 "Unused Supply (kg/year)",
-                "Supply Usage (%)",
             ],
             NUMBER_FORMAT,
+        )
+
+        apply_format_to_columns(
+            writer.sheets["supply_usage"],
+            ["Supply Usage (%)"],
+            PERCENT_FORMAT,
         )
 
         apply_format_to_columns(

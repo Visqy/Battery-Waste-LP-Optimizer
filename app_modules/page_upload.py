@@ -1,7 +1,6 @@
 from shiny import module, ui, render, reactive, req
 from battery_optimizer.io_excel import read_excel_input
 from battery_optimizer.config import TRANSPORT_RATE_RP_PER_KG_PER_KM
-import pandas as pd
 
 
 @module.ui
@@ -9,15 +8,23 @@ def upload_ui():
     return ui.nav_panel(
         "Upload Data",
         ui.div(
-            ui.h2("Upload Excel Input File"),
+            ui.h2("Upload Scenario Data"),
+            ui.p(
+                "Upload a completed Excel workbook to replace the active scenario. "
+                "After upload, run validation before optimization."
+            ),
             ui.card(
-                ui.card_header("File Upload"),
+                ui.card_header("Scenario File Upload"),
                 ui.card_body(
                     ui.input_file(
                         "file_upload",
-                        "Select .xlsx file",
+                        "Select .xlsx scenario file",
                         accept=[".xlsx"],
                         multiple=False,
+                    ),
+                    ui.tags.small(
+                        "The file must follow the template structure: collection_centers, recycling_facilities, and transport_costs.",
+                        style="color: #555;",
                     ),
                     ui.output_ui("upload_status"),
                 ),
@@ -48,7 +55,7 @@ def upload_server(input, output, session, state):
             upload_success.set(False)
             return
 
-        if "distance_km" not in tc_df.columns and tc_df is not None:
+        if tc_df is not None and "distance_km" not in tc_df.columns:
             if "transport_cost_rp_kg" in tc_df.columns:
                 tc_df = tc_df.copy()
                 tc_df["distance_km"] = (
@@ -58,7 +65,7 @@ def upload_server(input, output, session, state):
         state.collection_centers.set(cc_df)
         state.recycling_facilities.set(rf_df)
         state.transport_costs.set(tc_df)
-        state.data_source.set("uploaded")
+        state.data_source.set("uploaded scenario")
         state.validation_result.set(None)
         state.optimization_result.set(None)
         state.processed_results.set(None)
@@ -69,34 +76,41 @@ def upload_server(input, output, session, state):
     @render.ui
     def upload_status():
         errors = upload_errors()
+
         if upload_success():
-            source = state.data_source()
             cc = state.collection_centers()
             rf = state.recycling_facilities()
             tc = state.transport_costs()
             return ui.div(
                 ui.div(
-                    f"File uploaded successfully. "
-                    f"Loaded {len(cc)} collection centers, "
-                    f"{len(rf)} recycling facilities, "
-                    f"{len(tc)} transport cost routes.",
+                    ui.tags.strong("Scenario uploaded successfully. "),
+                    ui.span(
+                        f"Loaded {len(cc)} collection centers, "
+                        f"{len(rf)} recycling facilities, and "
+                        f"{len(tc)} transport cost routes. Run validation before optimization."
+                    ),
                     class_="alert alert-success",
+                    style="margin-top: 1rem;",
                 )
             )
+
         if errors:
             error_items = [ui.tags.li(e) for e in errors]
             return ui.div(
                 ui.div(
-                    ui.p("Upload failed with the following errors:"),
+                    ui.p("Upload failed. Fix the following issue(s) in the Excel workbook:"),
                     ui.tags.ul(*error_items),
                     class_="alert alert-danger",
+                    style="margin-top: 1rem;",
                 )
             )
+
         ds = state.data_source()
         return ui.div(
             ui.div(
-                f"Currently using: {ds} data. Upload a file to replace.",
+                f"Current active data source: {ds}. Upload a scenario file to replace it.",
                 class_="alert alert-info",
+                style="margin-top: 1rem;",
             )
         )
 
@@ -106,12 +120,12 @@ def upload_server(input, output, session, state):
         if not upload_success():
             return ui.div()
 
-        cc = state.collection_centers()
-        rf = state.recycling_facilities()
-        tc = state.transport_costs()
-
         return ui.div(
-            ui.h3("Data Preview", style="margin-top: 1.5rem;"),
+            ui.h3("Uploaded Scenario Preview", style="margin-top: 1.5rem;"),
+            ui.p(
+                "Review the uploaded records below. If the scenario is correct, continue to the Validation tab.",
+                style="color: #555;",
+            ),
             ui.navset_tab(
                 ui.nav_panel(
                     "Collection Centers",

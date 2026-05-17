@@ -15,17 +15,21 @@ def optimization_ui():
     return ui.nav_panel(
         "Optimization",
         ui.div(
-            ui.h2("LP Optimization"),
+            ui.h2("Scenario Optimization"),
+            ui.p(
+                "Run the locked Linear Programming model to evaluate the active scenario. "
+                "The result will be translated into decision indicators in the Results tab."
+            ),
             ui.layout_columns(
                 ui.card(
-                    ui.card_header("Solver Information"),
+                    ui.card_header("Solver and Scenario Evaluation"),
                     ui.card_body(
                         ui.tags.ul(
                             ui.tags.li("Solver: COIN-OR CBC via PuLP"),
-                            ui.tags.li("Method: Revised Simplex"),
                             ui.tags.li("Model type: Linear Programming, single-objective"),
-                            ui.tags.li("Objective: Minimize total net cost"),
-                            ui.tags.li(ui.HTML(r"Variables: \(x_{ij} \geq 0\), continuous")),
+                            ui.tags.li("Decision role: evaluate allocation, capacity use, and net economic outcome"),
+                            ui.tags.li("Objective: minimize total net cost"),
+                            ui.tags.li(ui.HTML(r"Decision variables: \(x_{ij} \geq 0\), continuous")),
                             ui.tags.li("Constraints: supply limits and capacity limits"),
                         )
                     ),
@@ -81,10 +85,14 @@ def optimization_ui():
                 col_widths=[6, 6],
             ),
             ui.card(
-                ui.card_header("Run Optimization"),
+                ui.card_header("Run Scenario Optimization"),
                 ui.card_body(
                     ui.output_ui("validation_gate"),
-                    ui.input_action_button("run_optimization", "Run Optimization", class_="btn-success btn-lg"),
+                    ui.input_action_button(
+                        "run_optimization",
+                        "Run Optimization",
+                        class_="btn-success btn-lg",
+                    ),
                     ui.output_ui("opt_status"),
                 ),
                 style="margin-top: 1rem;",
@@ -103,23 +111,25 @@ def optimization_server(input, output, session, state):
         if val_result is None:
             return ui.div(
                 ui.div(
-                    "Validation has not been run. Go to the Validation tab and run validation first.",
+                    "Validation has not been run. Go to the Validation tab and validate the active scenario first.",
                     class_="alert alert-warning",
                     style="margin-bottom: 1rem;",
                 )
             )
+
         if not val_result["is_valid"]:
             return ui.div(
                 ui.div(
                     f"Validation failed with {len(val_result['errors'])} error(s). "
-                    "Fix all errors in the Parameter Editor and re-run validation before optimizing.",
+                    "Fix all errors in the Parameter Editor or Excel input, then re-run validation before optimization.",
                     class_="alert alert-danger",
                     style="margin-bottom: 1rem;",
                 )
             )
+
         return ui.div(
             ui.div(
-                "Validation passed. Ready to optimize.",
+                "Validation passed. The active scenario is ready for optimization.",
                 class_="alert alert-success",
                 style="margin-bottom: 1rem;",
             )
@@ -131,14 +141,15 @@ def optimization_server(input, output, session, state):
         val_result = state.validation_result()
         if val_result is None:
             ui.notification_show(
-                "Please run validation first.",
+                "Please run scenario validation first.",
                 type="error",
                 duration=4,
             )
             return
+
         if not val_result["is_valid"]:
             ui.notification_show(
-                "Validation has errors. Fix them before optimizing.",
+                "The active scenario still has validation errors. Fix them before optimization.",
                 type="error",
                 duration=4,
             )
@@ -162,7 +173,7 @@ def optimization_server(input, output, session, state):
         else:
             state.processed_results.set(None)
             ui.notification_show(
-                f"Optimization returned status: {opt_result['status']}. Check parameters.",
+                f"Optimization returned status: {opt_result['status']}. Review scenario parameters.",
                 type="warning",
                 duration=6,
             )
@@ -183,7 +194,7 @@ def optimization_server(input, output, session, state):
 
         return ui.div(
             ui.hr(),
-            ui.h4("Last Optimization Result"),
+            ui.h4("Last Scenario Optimization"),
             ui.layout_columns(
                 ui.card(
                     ui.card_header("Solver Status"),
@@ -192,8 +203,13 @@ def optimization_server(input, output, session, state):
                     ),
                 ),
                 ui.card(
-                    ui.card_header("Objective Value (Rp/year)"),
-                    ui.card_body(ui.p(obj_text, style="font-weight: bold;")),
+                    ui.card_header("Minimum Net Cost Objective (Rp/year)"),
+                    ui.card_body(
+                        ui.p(obj_text, style="font-weight: bold;"),
+                        ui.tags.small(
+                            "Open the Results tab for economic status, policy insight, and decision indicators."
+                        ),
+                    ),
                 ),
                 ui.card(
                     ui.card_header("Runtime (seconds)"),
