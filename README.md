@@ -38,7 +38,7 @@ Open the browser at http://127.0.0.1:8000
 ## Project Structure
 
     app.py                           Main Shiny application entry point
-    app_modules/__init__.py
+    app_modules/init.py
         state.py                     Shared reactive state
         page_home.py                 Home page
         page_template.py             Template download
@@ -50,7 +50,7 @@ Open the browser at http://127.0.0.1:8000
         page_documentation.py        Model documentation
     src/
         battery_optimizer/
-            __init__.py
+            init.py
             config.py                Constants
             schema.py                Table schema definitions
             default_data.py          Default baseline data
@@ -90,19 +90,25 @@ One row per (cc_id, rf_id) pair. All pairs must be present.
 
 Source: Kasy et al. (2024), Period 4 (peak operating conditions)
 
-Collection centers (8):
-CC01 Jakarta, DKI Jakarta, supply = 258,480 kg/year
-CC02 Bekasi, Jawa Barat, supply = 59,165 kg/year
-CC03 Bandung, Jawa Barat, supply = 17,908 kg/year
-CC04 Surabaya, Jawa Timur, supply = 57,737 kg/year
-CC05 Tangerang, Banten, supply = 29,447 kg/year
-CC06 Bogor, Jawa Barat, supply = 3,808 kg/year
-CC07 Semarang, Jawa Tengah, supply = 23,652 kg/year
-CC08 Yogyakarta, DI Yogyakarta, supply = 5,203 kg/year
+### Collection Centers
 
-Recycling facilities (2):
-RF01 RF Jakarta, capacity = 365,000 kg/year, P = 28,360 Rp/kg, R = 238,400 Rp/kg
-RF02 RF Surabaya, capacity = 365,000 kg/year, P = 28,360 Rp/kg, R = 238,400 Rp/kg
+| ID   | Collection Center | Province      | Supply (kg/year) |
+| ---- | ----------------- | ------------- | ---------------: |
+| CC01 | Jakarta           | DKI Jakarta   |          258,480 |
+| CC02 | Bekasi            | Jawa Barat    |           59,165 |
+| CC03 | Bandung           | Jawa Barat    |           17,908 |
+| CC04 | Surabaya          | Jawa Timur    |           57,737 |
+| CC05 | Tangerang         | Banten        |           29,447 |
+| CC06 | Bogor             | Jawa Barat    |            3,808 |
+| CC07 | Semarang          | Jawa Tengah   |           23,652 |
+| CC08 | Yogyakarta        | DI Yogyakarta |            5,203 |
+
+### Recycling Facilities
+
+| ID   | Recycling Facility | Capacity (kg/year) | Processing Cost (Rp/kg) | Recovery Revenue (Rp/kg) |
+| ---- | ------------------ | -----------------: | ----------------------: | -----------------------: |
+| RF01 | RF Jakarta         |            365,000 |                  28,360 |                  238,400 |
+| RF02 | RF Surabaya        |            365,000 |                  28,360 |                  238,400 |
 
 ## Locked Model
 
@@ -110,29 +116,29 @@ The LP model formulation is locked. Users cannot modify the objective
 function, constraint structure, solver, or model type.
 
 Objective (minimize):
-Z = sum\_{i,j} (C_ij + P_j - R_j) \* x_ij
+$Z = \sum_{i,j} (C_ij + P_j - R_j) * x_{ij}$
 
 Supply constraint (for each collection center i):
-sum_j x_ij <= S_i
+$\sum_j x_{ij} \leq S_i$
 
 Capacity constraint (for each recycling facility j):
-sum_i x_ij <= Cap_j
+$\sum_i x_{ij} \leq Cap_j$
 
 Non-negativity:
-x_ij >= 0
+$x_{ij} \geq$$ 0$
 
-Assumption: y_j = 1 for all j (all recycling facilities are active)
+Assumption: $y_j = 1$ for all $j$ (all recycling facilities are active)
 
 ## Editable Parameters
 
 Users may edit the following via the Parameter Editor tab or by uploading
 a custom Excel file:
 
-S_i : supply_kg per collection center
-Cap_j : capacity_kg per recycling facility
-C_ij : transport_cost_rp_kg per route
-P_j : processing_cost_rp_kg per recycling facility
-R_j : recovery_revenue_rp_kg per recycling facility
+$S_i $   : supply_kg per collection center
+  $Cap_j$ : capacity*kg per recycling facility
+$C*{ij}$ : transport_cost_rp_kg per route
+$P_j$ : processing_cost_rp_kg per recycling facility
+$R_j$ : recovery_revenue_rp_kg per recycling facility
 Names and provinces of collection centers and recycling facilities
 
 ## Outputs
@@ -141,7 +147,7 @@ The Results tab displays:
 
 - Solver status, objective value, runtime
 - Total allocated volume, unused supply, unused capacity
-- Allocation matrix (CC x RF)
+- Allocation matrix ($CC \times RF$)
 - Route allocation table with net cost coefficients
 - Facility utilization chart
 - Supply usage chart
@@ -152,11 +158,11 @@ Export: Click "Export Results to Excel" to download a multi-sheet .xlsx file.
 
 ## Assumptions and Limitations
 
-1. y_j = 1: all recycling facilities are assumed active.
+1. $y_j = 1$: all recycling facilities are assumed active.
 2. Deterministic: no uncertainty in supply, capacity, or cost.
 3. Single-period: one annual planning period.
-4. Single-objective: only economic cost Z1 is optimized.
-5. Environmental (Z2) and material recovery (Z3) objectives not included.
+4. Single-objective: only economic cost $Z_1$ is optimized.
+5. Environmental ($Z_2$) and material recovery ($Z_3$) objectives not included.
 6. Facility location decisions not optimized.
 
 ## Reference
