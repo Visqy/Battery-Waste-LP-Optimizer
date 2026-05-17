@@ -1,4 +1,5 @@
 import os
+import sys
 from shiny import App, ui
 from app_modules.state import create_state
 from app_modules.page_home import home_ui, home_server
@@ -10,6 +11,9 @@ from app_modules.page_optimization import optimization_ui, optimization_server
 from app_modules.page_results import results_ui, results_server
 from app_modules.page_documentation import documentation_ui, documentation_server
 from app_modules.mathjax import mathjax_support
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
+import battery_optimizer
 
 os.makedirs("data", exist_ok=True)
 
