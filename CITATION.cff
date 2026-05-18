@@ -1,20 +1,43 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata below."
-title: "NMC Battery Recycling Supply Chain Optimizer"
+title: "NMC Battery Recycling Policy Decision Support Tool"
 type: software
 authors:
-  - family-names: "Your Family Name"
-    given-names: "Your Given Name"
-    email: "your.email@example.com"
+  - family-names: "TODO_AUTHOR_FAMILY_NAME"
+    given-names: "TODO_AUTHOR_GIVEN_NAME"
+    email: "TODO_AUTHOR_EMAIL"
+    affiliation: "TODO_AUTHOR_AFFILIATION"
 version: "1.0.0"
-date-released: "2026-05-17"
+date-released: "2026-05-18"
 license: "MIT"
-repository-code: "https://github.com/your-username/battery-optimizer"
-abstract: "A Shiny for Python decision support tool for solving a Linear Programming model for NMC electric vehicle battery recycling supply chain optimization on Java Island, Indonesia."
+repository-code: "TODO_REPOSITORY_URL"
+url: "TODO_DEPLOYMENT_URL"
+abstract: "A Shiny for Python decision support tool for evaluating allocation, capacity, and economic outcomes in NMC electric vehicle battery recycling supply chain scenarios using a locked Linear Programming model."
 keywords:
   - linear programming
   - supply chain optimization
   - battery recycling
+  - NMC battery
+  - electric vehicle battery waste
   - reverse logistics
   - decision support system
   - Shiny for Python
+references:
+  - type: article
+    authors:
+      - family-names: "Kasy"
+        given-names: "F. I."
+      - family-names: "Hisjam"
+        given-names: "M."
+      - family-names: "Jauhari"
+        given-names: "W. A."
+      - family-names: "Hassan"
+        given-names: "S. A. H. S."
+    title: "Optimizing the Supply Chain for Recycling Electric Vehicle NMC Batteries"
+    journal: "Jurnal Optimasi Sistem Industri"
+    year: 2024
+    volume: 23
+    issue: 2
+    start: 207
+    end: 226
+    doi: "10.25077/josi.v23.n2.p207-226.2024"

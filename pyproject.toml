@@ -5,21 +5,23 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "battery-optimizer"
 version = "1.0.0"
-description = "LP-based supply chain optimizer for NMC electric vehicle battery recycling in Java Island, Indonesia"
+description = "A Shiny for Python decision support tool for LP-based NMC electric vehicle battery recycling supply chain scenario evaluation"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
-    { name = "Your Name", email = "your.email@example.com" }
+    { name = "TODO_AUTHOR_FULL_NAME", email = "TODO_AUTHOR_EMAIL" }
 ]
 keywords = [
     "linear programming",
     "battery recycling",
+    "NMC battery",
+    "electric vehicle battery waste",
     "reverse logistics",
     "supply chain optimization",
     "decision support system",
-    "shiny",
-    "softwarex"
+    "Shiny for Python",
+    "SoftwareX"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -32,7 +34,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Mathematics",
-    "Topic :: Software Development :: Libraries :: Python Modules"
+    "Topic :: Scientific/Engineering :: Information Analysis"
 ]
 dependencies = [
     "shiny>=0.9.0",
@@ -56,13 +58,12 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-username/battery-optimizer"
-Repository = "https://github.com/your-username/battery-optimizer"
-Issues = "https://github.com/your-username/battery-optimizer/issues"
+Homepage = "TODO_REPOSITORY_URL"
+Repository = "TODO_REPOSITORY_URL"
+Issues = "TODO_REPOSITORY_URL/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["battery_optimizer*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
