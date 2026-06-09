@@ -9,10 +9,15 @@ def editor_ui():
     return ui.nav_panel(
         "Parameter Editor",
         ui.div(
-            ui.h2("Scenario Parameter Editor"),
+            ui.div(
+                ui.div("Step 3 · Scenario Editing", class_="label"),
+                ui.h2("Scenario Parameter Editor"),
+                class_="page-header",
+            ),
             ui.p(
-                "Edit the active scenario directly in the application. These changes affect the next validation "
-                "and optimization run. The mathematical model remains locked."
+                "Edit the active scenario directly in the application. These changes affect "
+                "the next validation and optimization run. The mathematical model remains locked.",
+                class_="body-text",
             ),
             ui.div(
                 ui.tags.strong("Important: "),
@@ -21,8 +26,9 @@ def editor_ui():
                     "Run validation again before using the scenario for decision review."
                 ),
                 class_="alert alert-info",
+                style="margin-top: 20px;",
             ),
-            ui.layout_columns(
+            ui.div(
                 ui.input_action_button(
                     "reload_form",
                     "Reload Form from Active Scenario",
@@ -33,46 +39,68 @@ def editor_ui():
                     "Reset Scenario to Default Data",
                     class_="btn-warning",
                 ),
-                col_widths=[3, 3],
+                style="display: flex; gap: 12px; margin-top: 20px;",
             ),
-            ui.hr(),
-            ui.h3("Collection Centers"),
+            ui.hr(class_="rule"),
+            ui.div(
+                ui.div("Supply", class_="label"),
+                ui.h3("Collection Centers"),
+                class_="sec-head",
+            ),
             ui.p(
                 "Edit collection center names, provinces, and available annual NMC battery waste supply.",
-                style="color: #555;",
+                class_="body-text",
             ),
             ui.output_ui("cc_editor"),
-            ui.input_action_button(
-                "apply_cc",
-                "Apply Collection Center Changes",
-                class_="btn-primary",
+            ui.div(
+                ui.input_action_button(
+                    "apply_cc",
+                    "Apply Collection Center Changes",
+                    class_="btn-primary",
+                ),
+                style="margin-top: 16px;",
             ),
-            ui.hr(),
-            ui.h3("Recycling Facilities"),
+            ui.hr(class_="rule"),
+            ui.div(
+                ui.div("Capacity & Economics", class_="label"),
+                ui.h3("Recycling Facilities"),
+                class_="sec-head",
+            ),
             ui.p(
                 "Edit facility capacity, processing cost, and recovered material revenue assumptions.",
-                style="color: #555;",
+                class_="body-text",
             ),
             ui.output_ui("rf_editor"),
-            ui.input_action_button(
-                "apply_rf",
-                "Apply Recycling Facility Changes",
-                class_="btn-primary",
+            ui.div(
+                ui.input_action_button(
+                    "apply_rf",
+                    "Apply Recycling Facility Changes",
+                    class_="btn-primary",
+                ),
+                style="margin-top: 16px;",
             ),
-            ui.hr(),
-            ui.h3("Transport Costs"),
+            ui.hr(class_="rule"),
+            ui.div(
+                ui.div("Routes", class_="label"),
+                ui.h3("Transport Costs"),
+                class_="sec-head",
+            ),
             ui.p(
                 "Enter transport cost in Rp/kg for each collection center and recycling facility pair. "
-                "Distance is estimated as transport_cost / 20 for reference only."
+                "Distance is estimated as transport_cost / 20 for reference only.",
+                class_="body-text",
             ),
             ui.output_ui("tc_editor"),
-            ui.input_action_button(
-                "apply_tc",
-                "Apply Transport Cost Changes",
-                class_="btn-primary",
+            ui.div(
+                ui.input_action_button(
+                    "apply_tc",
+                    "Apply Transport Cost Changes",
+                    class_="btn-primary",
+                ),
+                style="margin-top: 16px;",
             ),
             ui.output_ui("editor_status"),
-            style="padding: 1rem;",
+            class_="page-content",
         ),
     )
 

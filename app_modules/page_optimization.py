@@ -6,7 +6,7 @@ from battery_optimizer.results import process_all_results
 def formula_block(content):
     return ui.div(
         ui.HTML(content),
-        style="background: #f4f4f4; padding: 0.75rem; border-radius: 4px; margin-bottom: 0.5rem;",
+        class_="formula-block",
     )
 
 
@@ -15,89 +15,96 @@ def optimization_ui():
     return ui.nav_panel(
         "Optimization",
         ui.div(
-            ui.h2("Scenario Optimization"),
+            ui.div(
+                ui.div("Step 5 · Solve", class_="label"),
+                ui.h2("Scenario Optimization"),
+                class_="page-header",
+            ),
             ui.p(
                 "Run the locked Linear Programming model to evaluate the active scenario. "
-                "The result will be translated into decision indicators in the Results tab."
+                "The result will be translated into decision indicators in the Results tab.",
+                class_="body-text",
             ),
-            ui.layout_columns(
-                ui.card(
-                    ui.card_header("Solver and Scenario Evaluation"),
-                    ui.card_body(
-                        ui.tags.ul(
-                            ui.tags.li("Solver: COIN-OR CBC via PuLP"),
-                            ui.tags.li("Model type: Linear Programming, single-objective"),
-                            ui.tags.li("Decision role: evaluate allocation, capacity use, and net economic outcome"),
-                            ui.tags.li("Objective: minimize total net cost"),
-                            ui.tags.li(ui.HTML(r"Decision variables: \(x_{ij} \geq 0\), continuous")),
-                            ui.tags.li("Constraints: supply limits and capacity limits"),
-                        )
-                    ),
-                ),
-                ui.card(
-                    ui.card_header("Locked Model"),
-                    ui.card_body(
-                        formula_block(
-                            r"""
-                            \[
-                            \min Z =
-                            \sum_{i \in I}
-                            \sum_{j \in J}
-                            \left(C_{ij} + P_{j} - R_{j}\right)x_{ij}
-                            \]
-                            """
-                        ),
-                        ui.p("Subject to:"),
-                        formula_block(
-                            r"""
-                            \[
-                            \sum_{j \in J} x_{ij} \leq S_{i},
-                            \quad \forall i \in I
-                            \]
-                            """
-                        ),
-                        formula_block(
-                            r"""
-                            \[
-                            \sum_{i \in I} x_{ij} \leq Cap_{j},
-                            \quad \forall j \in J
-                            \]
-                            """
-                        ),
-                        formula_block(
-                            r"""
-                            \[
-                            x_{ij} \geq 0,
-                            \quad \forall i \in I,\ j \in J
-                            \]
-                            """
-                        ),
-                        formula_block(
-                            r"""
-                            \[
-                            y_{j} = 1,
-                            \quad \forall j \in J
-                            \]
-                            """
-                        ),
-                    ),
-                ),
-                col_widths=[6, 6],
+            ui.hr(class_="rule rule--sm"),
+            ui.div(
+                ui.div("Execution", class_="label"),
+                ui.h3("Run Scenario Optimization"),
+                class_="sec-head",
             ),
-            ui.card(
-                ui.card_header("Run Scenario Optimization"),
-                ui.card_body(
-                    ui.output_ui("validation_gate"),
-                    ui.input_action_button(
-                        "run_optimization",
-                        "Run Optimization",
-                        class_="btn-success btn-lg",
-                    ),
-                    ui.output_ui("opt_status"),
+            ui.output_ui("validation_gate"),
+            ui.div(
+                ui.input_action_button(
+                    "run_optimization",
+                    "Run Optimization",
+                    class_="btn-success btn-lg",
                 ),
-                style="margin-top: 1rem;",
+                style="margin-top: 16px;",
             ),
-            style="padding: 1rem;",
+            ui.output_ui("opt_status"),
+            ui.hr(class_="rule"),
+            ui.div(
+                ui.div(
+                    ui.div("Solver", class_="label"),
+                    ui.tags.ul(
+                        ui.tags.li("Solver: COIN-OR CBC via PuLP"),
+                        ui.tags.li("Model type: Linear Programming, single-objective"),
+                        ui.tags.li("Decision role: evaluate allocation, capacity use, and net economic outcome"),
+                        ui.tags.li("Objective: minimize total net cost"),
+                        ui.tags.li(ui.HTML(r"Decision variables: \(x_{ij} \geq 0\), continuous")),
+                        ui.tags.li("Constraints: supply limits and capacity limits"),
+                    ),
+                    class_="col-zone-col",
+                ),
+                ui.div(
+                    ui.div("Locked Model", class_="label"),
+                    formula_block(
+                        r"""
+                        \[
+                        \min Z =
+                        \sum_{i \in I}
+                        \sum_{j \in J}
+                        \left(C_{ij} + P_{j} - R_{j}\right)x_{ij}
+                        \]
+                        """
+                    ),
+                    ui.p("Subject to:"),
+                    formula_block(
+                        r"""
+                        \[
+                        \sum_{j \in J} x_{ij} \leq S_{i},
+                        \quad \forall i \in I
+                        \]
+                        """
+                    ),
+                    formula_block(
+                        r"""
+                        \[
+                        \sum_{i \in I} x_{ij} \leq Cap_{j},
+                        \quad \forall j \in J
+                        \]
+                        """
+                    ),
+                    formula_block(
+                        r"""
+                        \[
+                        x_{ij} \geq 0,
+                        \quad \forall i \in I,\ j \in J
+                        \]
+                        """
+                    ),
+                    formula_block(
+                        r"""
+                        \[
+                        y_{j} = 1,
+                        \quad \forall j \in J
+                        \]
+                        """
+                    ),
+                    class_="col-zone-col",
+                ),
+                class_="col-zone-2",
+            ),
+            class_="page-content",
         ),
     )
 

@@ -36,6 +36,7 @@ app_ui = ui.TagList(
         id="main_nav",
         bg="#1a5276",
         inverse=True,
+        header=ui.include_css("www/styles.css"),
     )
 )
 

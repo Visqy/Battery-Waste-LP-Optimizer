@@ -9,15 +9,15 @@ def math_cell(content):
 def formula_block(content):
     return ui.div(
         ui.HTML(content),
-        style="background: #f4f4f4; padding: 1rem; border-radius: 4px; margin-bottom: 0.75rem;",
+        class_="formula-block",
     )
 
 
 def guide_card(title, body):
-    return ui.card(
-        ui.card_header(title),
-        ui.card_body(body),
-        style="margin-bottom: 0.75rem;",
+    return ui.div(
+        ui.div(title, class_="label"),
+        body,
+        style="margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px solid var(--rule);",
     )
 
 
@@ -26,11 +26,17 @@ def documentation_ui():
     return ui.nav_panel(
         "Documentation",
         ui.div(
-            ui.h2("Documentation and User Guide"),
+            ui.div(
+                ui.div("Reference · Model & Guidance", class_="label"),
+                ui.h2("Documentation and User Guide"),
+                class_="page-header",
+            ),
             ui.p(
                 "This page combines model documentation, user guidance, and result interpretation "
-                "guidance for researchers, technical users, and policy stakeholders."
+                "guidance for researchers, technical users, and policy stakeholders.",
+                class_="body-text",
             ),
+            ui.hr(class_="rule rule--sm"),
             ui.navset_tab(
                 ui.nav_panel(
                     "User Guide",
@@ -474,7 +480,7 @@ def documentation_ui():
                     ),
                 ),
             ),
-            style="padding: 1rem;",
+            class_="page-content",
         ),
     )
 

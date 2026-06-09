@@ -8,11 +8,17 @@ def upload_ui():
     return ui.nav_panel(
         "Upload Data",
         ui.div(
-            ui.h2("Upload Scenario Data"),
+            ui.div(
+                ui.div("Step 2 · Scenario Input", class_="label"),
+                ui.h2("Upload Scenario Data"),
+                class_="page-header",
+            ),
             ui.p(
                 "Upload a completed Excel workbook to replace the active scenario. "
-                "After upload, run validation before optimization."
+                "After upload, run validation before optimization.",
+                class_="body-text",
             ),
+            ui.hr(class_="rule rule--sm"),
             ui.card(
                 ui.card_header("Scenario File Upload"),
                 ui.card_body(
@@ -24,13 +30,12 @@ def upload_ui():
                     ),
                     ui.tags.small(
                         "The file must follow the template structure: collection_centers, recycling_facilities, and transport_costs.",
-                        style="color: #555;",
                     ),
                     ui.output_ui("upload_status"),
                 ),
             ),
             ui.output_ui("preview_section"),
-            style="padding: 1rem;",
+            class_="page-content",
         ),
     )
 
@@ -124,7 +129,7 @@ def upload_server(input, output, session, state):
             ui.h3("Uploaded Scenario Preview", style="margin-top: 1.5rem;"),
             ui.p(
                 "Review the uploaded records below. If the scenario is correct, continue to the Validation tab.",
-                style="color: #555;",
+                style="color: var(--text-muted);",
             ),
             ui.navset_tab(
                 ui.nav_panel(

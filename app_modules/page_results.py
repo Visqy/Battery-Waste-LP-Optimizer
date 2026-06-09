@@ -146,19 +146,19 @@ def results_server(input, output, session, state):
                 ui.card(
                     ui.card_header("Economic Status"),
                     ui.card_body(
-                        ui.div(economic_status, class_=economic_badge_class, style="font-size: 1.1em;")
+                        ui.div(economic_status, class_=economic_badge_class)
                     ),
                 ),
                 ui.card(
                     ui.card_header("Supply Status"),
                     ui.card_body(
-                        ui.div(supply_status, class_="badge bg-primary", style="font-size: 1.1em;")
+                        ui.div(supply_status, class_="badge bg-primary")
                     ),
                 ),
                 ui.card(
                     ui.card_header("Capacity Status"),
                     ui.card_body(
-                        ui.div(capacity_status, class_="badge bg-info text-dark", style="font-size: 1.1em;")
+                        ui.div(capacity_status, class_="badge bg-info text-dark")
                     ),
                 ),
                 ui.card(
@@ -182,20 +182,20 @@ def results_server(input, output, session, state):
                 ui.card(
                     ui.card_header(economic_value_label),
                     ui.card_body(
-                        ui.p(format_rupiah_abs(economic_value_abs), style="font-weight: bold; font-size: 1.1em;")
+                        ui.p(format_rupiah_abs(economic_value_abs))
                     ),
                 ),
                 ui.card(
                     ui.card_header("Supply Absorption"),
-                    ui.card_body(ui.p(format_percent(supply_absorption_pct), style="font-weight: bold; font-size: 1.1em;")),
+                    ui.card_body(ui.p(format_percent(supply_absorption_pct))),
                 ),
                 ui.card(
                     ui.card_header("System Capacity Use"),
-                    ui.card_body(ui.p(format_percent(system_capacity_utilization_pct), style="font-weight: bold; font-size: 1.1em;")),
+                    ui.card_body(ui.p(format_percent(system_capacity_utilization_pct))),
                 ),
                 ui.card(
                     ui.card_header("Highest Facility Use"),
-                    ui.card_body(ui.p(format_percent(max_facility_utilization_pct), style="font-weight: bold; font-size: 1.1em;")),
+                    ui.card_body(ui.p(format_percent(max_facility_utilization_pct))),
                 ),
                 col_widths=[3, 3, 3, 3],
             ),
@@ -227,7 +227,7 @@ def results_server(input, output, session, state):
             ui.card(
                 ui.card_header("Minimum Net Cost Objective"),
                 ui.card_body(
-                    ui.p(format_rupiah(obj), style="font-weight: bold; font-size: 1.1em;"),
+                    ui.p(format_rupiah(obj)),
                     ui.tags.small(
                         "This technical value is the LP objective. A negative value indicates a positive net benefit when recovered material revenue exceeds total cost."
                     ),
@@ -256,7 +256,7 @@ def results_server(input, output, session, state):
             ui.div(
                 ui.download_button("download_results", "Export Results to Excel (.xlsx)", class_="btn-success"),
                 ui.download_button("download_configuration", "Export Current Configuration (.xlsx)", class_="btn-primary"),
-                style="margin-top: 1.5rem; display: flex; gap: 0.75rem;",
+                style="margin-top: 2rem; display: flex; gap: 12px;",
             ),
         )
 
@@ -324,7 +324,7 @@ def results_server(input, output, session, state):
         bars = ax.bar(
             df["name"] if "name" in df.columns else df["rf_id"],
             df["utilization_pct"],
-            color=["#1a5276", "#2e86c1"],
+            color=["#14532D", "#4ADE80"],
         )
 
         ax.set_ylabel("Utilization (%)")
@@ -367,7 +367,7 @@ def results_server(input, output, session, state):
         )
 
         fig, ax = plt.subplots(figsize=(8, 4))
-        colors = ["#1a5276", "#2e86c1", "#85c1e9", "#d6eaf8"]
+        colors = ["#14532D", "#4ADE80", "#86EFAC", "#DCFCE7"]
         bottom = [0.0] * len(cc_ids)
 
         for idx_j, j in enumerate(rf_ids):
@@ -436,7 +436,7 @@ def results_server(input, output, session, state):
         return ui.card(
             ui.card_header("Optimization Result Interpretation"),
             ui.card_body(ui.p(text)),
-            style="background: #f0f8ff;",
+            class_="insight-block",
         )
 
     @render.download(filename="optimization_results.xlsx")

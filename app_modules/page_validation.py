@@ -7,10 +7,15 @@ def validation_ui():
     return ui.nav_panel(
         "Validation",
         ui.div(
-            ui.h2("Scenario Data Validation"),
+            ui.div(
+                ui.div("Step 4 · Feasibility Check", class_="label"),
+                ui.h2("Scenario Data Validation"),
+                class_="page-header",
+            ),
             ui.p(
                 "Run validation to check whether the active scenario is complete and suitable for optimization. "
-                "Optimization should only be used after all errors are resolved."
+                "Optimization should only be used after all errors are resolved.",
+                class_="body-text",
             ),
             ui.div(
                 ui.tags.strong("Validation role: "),
@@ -18,10 +23,14 @@ def validation_ui():
                     "this step checks data completeness, consistency, and feasibility signals before the LP model is solved."
                 ),
                 class_="alert alert-info",
+                style="margin-top: 20px;",
             ),
-            ui.input_action_button("run_validation", "Run Scenario Validation", class_="btn-primary"),
+            ui.div(
+                ui.input_action_button("run_validation", "Run Scenario Validation", class_="btn-primary"),
+                style="margin-top: 20px;",
+            ),
             ui.output_ui("validation_results"),
-            style="padding: 1rem;",
+            class_="page-content",
         ),
     )
 
@@ -69,9 +78,9 @@ def validation_server(input, output, session, state):
                 ui.card_header(f"Errors ({len(result['errors'])})"),
                 ui.card_body(
                     ui.p("These issues block optimization and must be fixed."),
-                    ui.tags.ul(*error_items, style="color: red;"),
+                    ui.tags.ul(*error_items, style="color: var(--red-600);"),
                 ),
-                style="margin-top: 1rem; border-left: 4px solid red;",
+                style="margin-top: 1rem; border-left: 4px solid var(--red-600);",
             )
 
         warning_block = ui.div()
@@ -81,9 +90,9 @@ def validation_server(input, output, session, state):
                 ui.card_header(f"Warnings ({len(result['warnings'])})"),
                 ui.card_body(
                     ui.p("Warnings do not block optimization, but they should be reviewed before interpreting results."),
-                    ui.tags.ul(*warn_items, style="color: #856404;"),
+                    ui.tags.ul(*warn_items, style="color: var(--amber-600);"),
                 ),
-                style="margin-top: 1rem; border-left: 4px solid #ffc107;",
+                style="margin-top: 1rem; border-left: 4px solid var(--amber-400);",
             )
 
         summary = result.get("summary", {})
