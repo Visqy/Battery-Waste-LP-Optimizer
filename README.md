@@ -1,4 +1,3 @@
-
 # NMC Battery Recycling Policy Decision Support Tool
 
 A Shiny for Python decision support tool for evaluating allocation, capacity, and economic outcomes in the Nickel-Manganese-Cobalt (NMC) electric vehicle battery recycling supply chain on Java Island, Indonesia.
@@ -79,13 +78,13 @@ python -m pytest
 
 The current test suite covers:
 
-* Default data loading
-* Excel input and output
-* Input validation
-* LP optimization
-* Result processing
-* Policy insight generation
-* Excel report export
+- Default data loading
+- Excel input and output
+- Input validation
+- LP optimization
+- Result processing
+- Policy insight generation
+- Excel report export
 
 ## Repository Structure
 
@@ -198,7 +197,7 @@ The default scenario follows Kasy et al. (2024), Period 4, peak operating condit
 | CC02 | Bekasi            | Jawa Barat    |           59,165 |
 | CC03 | Bandung           | Jawa Barat    |           17,908 |
 | CC04 | Surabaya          | Jawa Timur    |           57,737 |
-| CC05 | Tangerang         | Banten        |           29,447 |
+| CC05 | Tangerang         | Banten        |           47,358 |
 | CC06 | Bogor             | Jawa Barat    |            3,808 |
 | CC07 | Semarang          | Jawa Tengah   |           23,652 |
 | CC08 | Yogyakarta        | DI Yogyakarta |            5,203 |
@@ -216,8 +215,8 @@ The software implements a single-objective Linear Programming model.
 
 ### Sets
 
-* $I$: set of collection centers
-* $J$: set of recycling facilities
+- $I$: set of collection centers
+- $J$: set of recycling facilities
 
 ### Decision Variable
 
@@ -227,11 +226,11 @@ where $x_{ij}$ is the NMC battery waste volume allocated from collection center 
 
 ### Parameters
 
-* $S_i$: available supply at collection center (i)
-* $Cap_j$: processing capacity at recycling facility (j)
-* $C_{ij}$: transportation cost from collection center (i) to recycling facility (j)
-* $P_j$: processing cost at recycling facility (j)
-* $R_j$: recovered material revenue at recycling facility (j)
+- $S_i$: available supply at collection center (i)
+- $Cap_j$: processing capacity at recycling facility (j)
+- $C_{ij}$: transportation cost from collection center (i) to recycling facility (j)
+- $P_j$: processing cost at recycling facility (j)
+- $R_j$: recovered material revenue at recycling facility (j)
 
 ### Objective Function
 
@@ -257,16 +256,16 @@ The Results page displays an executive decision summary before technical tables.
 
 Main indicators include:
 
-* Economic status
-* Supply status
-* Capacity status
-* Bottleneck status
-* Policy priority
-* Recommended next analysis
-* Estimated net benefit or estimated net cost
-* Supply absorption percentage
-* System capacity utilization percentage
-* Maximum facility utilization percentage
+- Economic status
+- Supply status
+- Capacity status
+- Bottleneck status
+- Policy priority
+- Recommended next analysis
+- Estimated net benefit or estimated net cost
+- Supply absorption percentage
+- System capacity utilization percentage
+- Maximum facility utilization percentage
 
 These indicators are generated using deterministic rule-based logic. They support decision review but do not replace policy judgment.
 
@@ -274,18 +273,18 @@ These indicators are generated using deterministic rule-based logic. They suppor
 
 The software also displays:
 
-* Solver status
-* Minimum net cost objective
-* Total allocated volume
-* Unused supply
-* Unused capacity
-* Runtime
-* Allocation matrix
-* Route allocation table
-* Facility utilization chart
-* Supply usage chart
-* Constraint slack and shadow price table
-* Technical interpretation
+- Solver status
+- Minimum net cost objective
+- Total allocated volume
+- Unused supply
+- Unused capacity
+- Runtime
+- Allocation matrix
+- Route allocation table
+- Facility utilization chart
+- Supply usage chart
+- Constraint slack and shadow price table
+- Technical interpretation
 
 ## Excel Export
 

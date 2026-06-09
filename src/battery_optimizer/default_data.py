@@ -18,7 +18,7 @@ def get_default_collection_centers():
                 "DKI Jakarta", "Jawa Barat", "Jawa Barat", "Jawa Timur",
                 "Banten", "Jawa Barat", "Jawa Tengah", "DI Yogyakarta",
             ],
-            "supply_kg": [258480, 59165, 17908, 57737, 29447, 3808, 23652, 5203],
+            "supply_kg": [258480, 59165, 17908, 57737, 47358, 3808, 23652, 5203],
         }
     )
 
