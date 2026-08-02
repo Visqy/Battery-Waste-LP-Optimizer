@@ -87,7 +87,7 @@ def results_ui():
 
 @module.server
 def results_server(input, output, session, state):
-    @output
+    @output(suspend_when_hidden=False)
     @render.ui
     def results_content():
         opt_result = state.optimization_result()
@@ -260,7 +260,7 @@ def results_server(input, output, session, state):
             ),
         )
 
-    @output
+    @output(suspend_when_hidden=False)
     @render.table
     def alloc_matrix_table():
         processed = state.processed_results()
@@ -276,7 +276,7 @@ def results_server(input, output, session, state):
         df = df.rename(columns=ALLOCATION_MATRIX_LABELS)
         return df
 
-    @output
+    @output(suspend_when_hidden=False)
     @render.table
     def route_table():
         processed = state.processed_results()
@@ -309,7 +309,7 @@ def results_server(input, output, session, state):
         df = df.rename(columns=ROUTE_TABLE_LABELS)
         return df
 
-    @output
+    @output(suspend_when_hidden=False)
     @render.plot
     def utilization_chart():
         processed = state.processed_results()
@@ -345,7 +345,7 @@ def results_server(input, output, session, state):
         plt.tight_layout()
         return fig
 
-    @output
+    @output(suspend_when_hidden=False)
     @render.plot
     def supply_chart():
         processed = state.processed_results()
@@ -400,7 +400,7 @@ def results_server(input, output, session, state):
         plt.tight_layout()
         return fig
 
-    @output
+    @output(suspend_when_hidden=False)
     @render.table
     def constraint_table():
         processed = state.processed_results()
@@ -424,7 +424,7 @@ def results_server(input, output, session, state):
         df = df.rename(columns=CONSTRAINT_TABLE_LABELS)
         return df
 
-    @output
+    @output(suspend_when_hidden=False)
     @render.ui
     def interpretation_block():
         processed = state.processed_results()
@@ -445,16 +445,24 @@ def results_server(input, output, session, state):
         processed = state.processed_results()
 
         if opt_result is None or processed is None:
+            ui.notification_show(
+                "No optimization results available to export. Run optimization first.",
+                type="warning",
+                duration=5,
+            )
             return
 
-        cc = state.collection_centers()
-        rf = state.recycling_facilities()
-        tc = state.transport_costs()
+        try:
+            cc = state.collection_centers()
+            rf = state.recycling_facilities()
+            tc = state.transport_costs()
 
-        filepath = export_results_to_excel(opt_result, processed, cc, rf, tc)
+            filepath = export_results_to_excel(opt_result, processed, cc, rf, tc)
 
-        with open(filepath, "rb") as f:
-            yield f.read()
+            with open(filepath, "rb") as f:
+                yield f.read()
+        except Exception as exc:
+            ui.notification_show(f"Failed to export results: {exc}", type="error", duration=6)
 
     @render.download(filename="current_configuration.xlsx")
     def download_configuration():
@@ -463,14 +471,22 @@ def results_server(input, output, session, state):
         tc = state.transport_costs()
 
         if cc is None or rf is None or tc is None:
+            ui.notification_show(
+                "No active configuration available to export.",
+                type="warning",
+                duration=5,
+            )
             return
 
-        filepath = export_current_configuration(
-            cc,
-            rf,
-            tc,
-            "outputs/current_configuration.xlsx",
-        )
+        try:
+            filepath = export_current_configuration(
+                cc,
+                rf,
+                tc,
+                "outputs/current_configuration.xlsx",
+            )
 
-        with open(filepath, "rb") as f:
-            yield f.read()
+            with open(filepath, "rb") as f:
+                yield f.read()
+        except Exception as exc:
+            ui.notification_show(f"Failed to export configuration: {exc}", type="error", duration=6)

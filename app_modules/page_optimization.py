@@ -111,7 +111,7 @@ def optimization_ui():
 
 @module.server
 def optimization_server(input, output, session, state):
-    @output
+    @output(suspend_when_hidden=False)
     @render.ui
     def validation_gate():
         val_result = state.validation_result()
@@ -162,30 +162,34 @@ def optimization_server(input, output, session, state):
             )
             return
 
-        cc = state.collection_centers()
-        rf = state.recycling_facilities()
-        tc = state.transport_costs()
+        try:
+            cc = state.collection_centers()
+            rf = state.recycling_facilities()
+            tc = state.transport_costs()
 
-        opt_result = solve_lp(cc, rf, tc)
-        state.optimization_result.set(opt_result)
+            opt_result = solve_lp(cc, rf, tc)
+            state.optimization_result.set(opt_result)
 
-        if opt_result["status"] == "Optimal":
-            processed = process_all_results(opt_result, cc, rf, tc)
-            state.processed_results.set(processed)
-            ui.notification_show(
-                f"Optimization complete. Status: Optimal. Runtime: {opt_result['runtime']:.3f}s",
-                type="message",
-                duration=5,
-            )
-        else:
+            if opt_result["status"] == "Optimal":
+                processed = process_all_results(opt_result, cc, rf, tc)
+                state.processed_results.set(processed)
+                ui.notification_show(
+                    f"Optimization complete. Status: Optimal. Runtime: {opt_result['runtime']:.3f}s",
+                    type="message",
+                    duration=5,
+                )
+            else:
+                state.processed_results.set(None)
+                ui.notification_show(
+                    f"Optimization returned status: {opt_result['status']}. Review scenario parameters.",
+                    type="warning",
+                    duration=6,
+                )
+        except Exception as exc:
             state.processed_results.set(None)
-            ui.notification_show(
-                f"Optimization returned status: {opt_result['status']}. Review scenario parameters.",
-                type="warning",
-                duration=6,
-            )
+            ui.notification_show(f"Optimization failed to run: {exc}", type="error", duration=6)
 
-    @output
+    @output(suspend_when_hidden=False)
     @render.ui
     def opt_status():
         opt_result = state.optimization_result()

@@ -40,13 +40,24 @@ def validation_server(input, output, session, state):
     @reactive.effect
     @reactive.event(input.run_validation)
     def _run():
-        cc = state.collection_centers()
-        rf = state.recycling_facilities()
-        tc = state.transport_costs()
-        result = validate_all(cc, rf, tc)
-        state.validation_result.set(result)
+        try:
+            cc = state.collection_centers()
+            rf = state.recycling_facilities()
+            tc = state.transport_costs()
+            result = validate_all(cc, rf, tc)
+            state.validation_result.set(result)
+            if result["is_valid"]:
+                ui.notification_show("Validation passed.", type="message", duration=4)
+            else:
+                ui.notification_show(
+                    f"Validation failed with {len(result['errors'])} error(s).",
+                    type="warning",
+                    duration=5,
+                )
+        except Exception as exc:
+            ui.notification_show(f"Validation failed to run: {exc}", type="error", duration=6)
 
-    @output
+    @output(suspend_when_hidden=False)
     @render.ui
     def validation_results():
         result = state.validation_result()

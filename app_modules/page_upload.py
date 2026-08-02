@@ -48,36 +48,47 @@ def upload_server(input, output, session, state):
     @reactive.effect
     @reactive.event(input.file_upload)
     def _handle_upload():
-        file_info = input.file_upload()
-        if file_info is None or len(file_info) == 0:
-            return
+        try:
+            file_info = input.file_upload()
+            if file_info is None or len(file_info) == 0:
+                return
 
-        filepath = file_info[0]["datapath"]
-        cc_df, rf_df, tc_df, errors = read_excel_input(filepath)
+            filepath = file_info[0]["datapath"]
+            cc_df, rf_df, tc_df, errors = read_excel_input(filepath)
 
-        if errors:
-            upload_errors.set(errors)
+            if errors:
+                upload_errors.set(errors)
+                upload_success.set(False)
+                ui.notification_show(
+                    f"Upload failed with {len(errors)} issue(s). See details below.",
+                    type="error",
+                    duration=6,
+                )
+                return
+
+            if tc_df is not None and "distance_km" not in tc_df.columns:
+                if "transport_cost_rp_kg" in tc_df.columns:
+                    tc_df = tc_df.copy()
+                    tc_df["distance_km"] = (
+                        tc_df["transport_cost_rp_kg"] / TRANSPORT_RATE_RP_PER_KG_PER_KM
+                    ).round(0).astype(int)
+
+            state.collection_centers.set(cc_df)
+            state.recycling_facilities.set(rf_df)
+            state.transport_costs.set(tc_df)
+            state.data_source.set("uploaded scenario")
+            state.validation_result.set(None)
+            state.optimization_result.set(None)
+            state.processed_results.set(None)
+            upload_errors.set([])
+            upload_success.set(True)
+            ui.notification_show("Scenario uploaded successfully.", type="message", duration=4)
+        except Exception as exc:
+            upload_errors.set([f"Unexpected error while reading file: {exc}"])
             upload_success.set(False)
-            return
+            ui.notification_show(f"Upload failed: {exc}", type="error", duration=6)
 
-        if tc_df is not None and "distance_km" not in tc_df.columns:
-            if "transport_cost_rp_kg" in tc_df.columns:
-                tc_df = tc_df.copy()
-                tc_df["distance_km"] = (
-                    tc_df["transport_cost_rp_kg"] / TRANSPORT_RATE_RP_PER_KG_PER_KM
-                ).round(0).astype(int)
-
-        state.collection_centers.set(cc_df)
-        state.recycling_facilities.set(rf_df)
-        state.transport_costs.set(tc_df)
-        state.data_source.set("uploaded scenario")
-        state.validation_result.set(None)
-        state.optimization_result.set(None)
-        state.processed_results.set(None)
-        upload_errors.set([])
-        upload_success.set(True)
-
-    @output
+    @output(suspend_when_hidden=False)
     @render.ui
     def upload_status():
         errors = upload_errors()
@@ -119,7 +130,7 @@ def upload_server(input, output, session, state):
             )
         )
 
-    @output
+    @output(suspend_when_hidden=False)
     @render.ui
     def preview_section():
         if not upload_success():
@@ -147,19 +158,19 @@ def upload_server(input, output, session, state):
             ),
         )
 
-    @output
+    @output(suspend_when_hidden=False)
     @render.table
     def preview_cc():
         req(upload_success())
         return state.collection_centers()
 
-    @output
+    @output(suspend_when_hidden=False)
     @render.table
     def preview_rf():
         req(upload_success())
         return state.recycling_facilities()
 
-    @output
+    @output(suspend_when_hidden=False)
     @render.table
     def preview_tc():
         req(upload_success())

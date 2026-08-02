@@ -113,24 +113,32 @@ def editor_server(input, output, session, state):
     @reactive.effect
     @reactive.event(input.reload_form)
     def _reload():
-        form_trigger.set(form_trigger() + 1)
-        status_message.set("Form reloaded from the active scenario.")
+        try:
+            form_trigger.set(form_trigger() + 1)
+            status_message.set("Form reloaded from the active scenario.")
+            ui.notification_show("Form reloaded from the active scenario.", type="message", duration=4)
+        except Exception as exc:
+            ui.notification_show(f"Failed to reload form: {exc}", type="error", duration=6)
 
     @reactive.effect
     @reactive.event(input.reset_defaults)
     def _reset():
-        cc, rf, tc = load_default_data()
-        state.collection_centers.set(cc)
-        state.recycling_facilities.set(rf)
-        state.transport_costs.set(tc)
-        state.data_source.set("default")
-        state.validation_result.set(None)
-        state.optimization_result.set(None)
-        state.processed_results.set(None)
-        form_trigger.set(form_trigger() + 1)
-        status_message.set("Scenario reset to default baseline data.")
+        try:
+            cc, rf, tc = load_default_data()
+            state.collection_centers.set(cc)
+            state.recycling_facilities.set(rf)
+            state.transport_costs.set(tc)
+            state.data_source.set("default")
+            state.validation_result.set(None)
+            state.optimization_result.set(None)
+            state.processed_results.set(None)
+            form_trigger.set(form_trigger() + 1)
+            status_message.set("Scenario reset to default baseline data.")
+            ui.notification_show("Scenario reset to default baseline data.", type="message", duration=4)
+        except Exception as exc:
+            ui.notification_show(f"Failed to reset scenario: {exc}", type="error", duration=6)
 
-    @output
+    @output(suspend_when_hidden=False)
     @render.ui
     def cc_editor():
         form_trigger()
@@ -171,7 +179,7 @@ def editor_server(input, output, session, state):
             )
         return ui.div(*rows)
 
-    @output
+    @output(suspend_when_hidden=False)
     @render.ui
     def rf_editor():
         form_trigger()
@@ -226,7 +234,7 @@ def editor_server(input, output, session, state):
             )
         return ui.div(*rows)
 
-    @output
+    @output(suspend_when_hidden=False)
     @render.ui
     def tc_editor():
         form_trigger()
@@ -280,119 +288,134 @@ def editor_server(input, output, session, state):
     @reactive.effect
     @reactive.event(input.apply_cc)
     def _apply_cc():
-        with reactive.isolate():
-            cc_df = state.collection_centers().copy()
+        try:
+            with reactive.isolate():
+                cc_df = state.collection_centers().copy()
 
-        updated_rows = []
-        for _, row in cc_df.iterrows():
-            cc_id = str(row["cc_id"])
-            safe_id = cc_id.replace("-", "_")
+            updated_rows = []
+            for _, row in cc_df.iterrows():
+                cc_id = str(row["cc_id"])
+                safe_id = cc_id.replace("-", "_")
 
-            try:
-                new_name = input[f"cc_name_{safe_id}"]()
-                new_province = input[f"cc_province_{safe_id}"]()
-                new_supply = float(input[f"cc_supply_{safe_id}"]())
-            except Exception:
-                new_name = row.get("name", "")
-                new_province = row.get("province", "")
-                new_supply = float(row.get("supply_kg", 0))
+                try:
+                    new_name = input[f"cc_name_{safe_id}"]()
+                    new_province = input[f"cc_province_{safe_id}"]()
+                    new_supply = float(input[f"cc_supply_{safe_id}"]())
+                except Exception:
+                    new_name = row.get("name", "")
+                    new_province = row.get("province", "")
+                    new_supply = float(row.get("supply_kg", 0))
 
-            updated_rows.append(
-                {
-                    "cc_id": cc_id,
-                    "name": new_name,
-                    "province": new_province,
-                    "supply_kg": new_supply,
-                }
-            )
+                updated_rows.append(
+                    {
+                        "cc_id": cc_id,
+                        "name": new_name,
+                        "province": new_province,
+                        "supply_kg": new_supply,
+                    }
+                )
 
-        state.collection_centers.set(pd.DataFrame(updated_rows))
-        state.validation_result.set(None)
-        state.optimization_result.set(None)
-        state.processed_results.set(None)
-        status_message.set("Collection center parameters updated. Run validation before optimization.")
+            state.collection_centers.set(pd.DataFrame(updated_rows))
+            state.validation_result.set(None)
+            state.optimization_result.set(None)
+            state.processed_results.set(None)
+            msg = "Collection center parameters updated. Run validation before optimization."
+            status_message.set(msg)
+            ui.notification_show(msg, type="message", duration=4)
+        except Exception as exc:
+            ui.notification_show(f"Failed to apply collection center changes: {exc}", type="error", duration=6)
 
     @reactive.effect
     @reactive.event(input.apply_rf)
     def _apply_rf():
-        with reactive.isolate():
-            rf_df = state.recycling_facilities().copy()
+        try:
+            with reactive.isolate():
+                rf_df = state.recycling_facilities().copy()
 
-        updated_rows = []
-        for _, row in rf_df.iterrows():
-            rf_id = str(row["rf_id"])
-            safe_id = rf_id.replace("-", "_")
+            updated_rows = []
+            for _, row in rf_df.iterrows():
+                rf_id = str(row["rf_id"])
+                safe_id = rf_id.replace("-", "_")
 
-            try:
-                new_name = input[f"rf_name_{safe_id}"]()
-                new_province = input[f"rf_province_{safe_id}"]()
-                new_cap = float(input[f"rf_capacity_{safe_id}"]())
-                new_proc = float(input[f"rf_proc_cost_{safe_id}"]())
-                new_rev = float(input[f"rf_rev_{safe_id}"]())
-            except Exception:
-                new_name = row.get("name", "")
-                new_province = row.get("province", "")
-                new_cap = float(row.get("capacity_kg", 0))
-                new_proc = float(row.get("processing_cost_rp_kg", 0))
-                new_rev = float(row.get("recovery_revenue_rp_kg", 0))
+                try:
+                    new_name = input[f"rf_name_{safe_id}"]()
+                    new_province = input[f"rf_province_{safe_id}"]()
+                    new_cap = float(input[f"rf_capacity_{safe_id}"]())
+                    new_proc = float(input[f"rf_proc_cost_{safe_id}"]())
+                    new_rev = float(input[f"rf_rev_{safe_id}"]())
+                except Exception:
+                    new_name = row.get("name", "")
+                    new_province = row.get("province", "")
+                    new_cap = float(row.get("capacity_kg", 0))
+                    new_proc = float(row.get("processing_cost_rp_kg", 0))
+                    new_rev = float(row.get("recovery_revenue_rp_kg", 0))
 
-            updated_rows.append(
-                {
-                    "rf_id": rf_id,
-                    "name": new_name,
-                    "province": new_province,
-                    "capacity_kg": new_cap,
-                    "processing_cost_rp_kg": new_proc,
-                    "recovery_revenue_rp_kg": new_rev,
-                }
-            )
+                updated_rows.append(
+                    {
+                        "rf_id": rf_id,
+                        "name": new_name,
+                        "province": new_province,
+                        "capacity_kg": new_cap,
+                        "processing_cost_rp_kg": new_proc,
+                        "recovery_revenue_rp_kg": new_rev,
+                    }
+                )
 
-        state.recycling_facilities.set(pd.DataFrame(updated_rows))
-        state.validation_result.set(None)
-        state.optimization_result.set(None)
-        state.processed_results.set(None)
-        status_message.set("Recycling facility parameters updated. Run validation before optimization.")
+            state.recycling_facilities.set(pd.DataFrame(updated_rows))
+            state.validation_result.set(None)
+            state.optimization_result.set(None)
+            state.processed_results.set(None)
+            msg = "Recycling facility parameters updated. Run validation before optimization."
+            status_message.set(msg)
+            ui.notification_show(msg, type="message", duration=4)
+        except Exception as exc:
+            ui.notification_show(f"Failed to apply recycling facility changes: {exc}", type="error", duration=6)
 
     @reactive.effect
     @reactive.event(input.apply_tc)
     def _apply_tc():
-        with reactive.isolate():
-            cc_df = state.collection_centers()
-            rf_df = state.recycling_facilities()
+        try:
+            with reactive.isolate():
+                cc_df = state.collection_centers()
+                rf_df = state.recycling_facilities()
 
-        cc_ids = cc_df["cc_id"].tolist()
-        rf_ids = rf_df["rf_id"].tolist()
+            cc_ids = cc_df["cc_id"].tolist()
+            rf_ids = rf_df["rf_id"].tolist()
 
-        updated_rows = []
-        for cc_id in cc_ids:
-            safe_cc = str(cc_id).replace("-", "_")
+            updated_rows = []
+            for cc_id in cc_ids:
+                safe_cc = str(cc_id).replace("-", "_")
 
-            for rf_id in rf_ids:
-                safe_rf = str(rf_id).replace("-", "_")
+                for rf_id in rf_ids:
+                    safe_rf = str(rf_id).replace("-", "_")
 
-                try:
-                    cost_val = float(input[f"tc_{safe_cc}_{safe_rf}"]())
-                except Exception:
-                    cost_val = 0.0
+                    try:
+                        cost_val = float(input[f"tc_{safe_cc}_{safe_rf}"]())
+                    except Exception:
+                        cost_val = 0.0
 
-                dist_val = round(cost_val / TRANSPORT_RATE_RP_PER_KG_PER_KM)
+                    dist_val = round(cost_val / TRANSPORT_RATE_RP_PER_KG_PER_KM)
 
-                updated_rows.append(
-                    {
-                        "cc_id": str(cc_id),
-                        "rf_id": str(rf_id),
-                        "transport_cost_rp_kg": cost_val,
-                        "distance_km": dist_val,
-                    }
-                )
+                    updated_rows.append(
+                        {
+                            "cc_id": str(cc_id),
+                            "rf_id": str(rf_id),
+                            "transport_cost_rp_kg": cost_val,
+                            "distance_km": dist_val,
+                        }
+                    )
 
-        state.transport_costs.set(pd.DataFrame(updated_rows))
-        state.validation_result.set(None)
-        state.optimization_result.set(None)
-        state.processed_results.set(None)
-        status_message.set("Transport cost parameters updated. Run validation before optimization.")
+            state.transport_costs.set(pd.DataFrame(updated_rows))
+            state.validation_result.set(None)
+            state.optimization_result.set(None)
+            state.processed_results.set(None)
+            msg = "Transport cost parameters updated. Run validation before optimization."
+            status_message.set(msg)
+            ui.notification_show(msg, type="message", duration=4)
+        except Exception as exc:
+            ui.notification_show(f"Failed to apply transport cost changes: {exc}", type="error", duration=6)
 
-    @output
+    @output(suspend_when_hidden=False)
     @render.ui
     def editor_status():
         msg = status_message()
