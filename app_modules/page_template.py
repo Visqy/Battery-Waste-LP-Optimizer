@@ -40,7 +40,6 @@ def template_ui():
     return ui.nav_panel(
         "Template",
         ui.div(
-            # ── Page Header ──────────────────────────────────────────────────
             ui.div(
                 ui.div("Step 1 · Scenario Preparation", class_="label"),
                 ui.h2("Download Scenario Input Template"),
@@ -53,7 +52,6 @@ def template_ui():
                 class_="body-text",
             ),
             ui.hr(class_="rule rule--sm"),
-            # ── Scenario Workbook (prose + standalone button) ────────────────
             ui.div(
                 ui.div("Workbook", class_="label"),
                 ui.h3("Scenario Workbook"),
@@ -78,7 +76,6 @@ def template_ui():
                 style="margin-top: 20px;",
             ),
             ui.hr(class_="rule"),
-            # ── Required Sheet Structure (zone, three columns) ───────────────
             ui.div(
                 ui.div("Reference", class_="label"),
                 ui.h3("Required Sheet Structure"),

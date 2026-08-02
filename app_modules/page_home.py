@@ -16,7 +16,6 @@ def home_ui():
     return ui.nav_panel(
         "Home",
         ui.div(
-            # ── Page Header ──────────────────────────────────────────────────
             ui.div(
                 ui.div(
                     "Decision Support Tool · Java Island, Indonesia",
@@ -38,9 +37,7 @@ def home_ui():
                 class_="page-header",
             ),
             ui.hr(class_="rule rule--lg"),
-            # ── Three-Column Zone ────────────────────────────────────────────
             ui.div(
-                # Column 1: Decision Questions
                 ui.div(
                     ui.div("Decision Questions", class_="label"),
                     ui.tags.ul(
@@ -64,7 +61,6 @@ def home_ui():
                     ),
                     class_="col-zone-col",
                 ),
-                # Column 2: Model Scope
                 ui.div(
                     ui.div("Model Scope", class_="label"),
                     ui.p(
@@ -81,7 +77,6 @@ def home_ui():
                     ),
                     class_="col-zone-col",
                 ),
-                # Column 3: Locked Model
                 ui.div(
                     ui.div("Locked Model", class_="label"),
                     ui.p(
@@ -105,7 +100,6 @@ def home_ui():
                 class_="col-zone",
             ),
             ui.hr(class_="rule rule--lg"),
-            # ── Stakeholder Workflow ─────────────────────────────────────────
             ui.div(
                 ui.div("Workflow", class_="label"),
                 ui.h2("Stakeholder Workflow"),
@@ -139,7 +133,6 @@ def home_ui():
                 class_="workflow-zone",
             ),
             ui.hr(class_="rule rule--lg"),
-            # ── Key Outputs ──────────────────────────────────────────────────
             ui.div(
                 ui.div("Outputs", class_="label"),
                 ui.h2("Key Outputs"),
@@ -179,7 +172,6 @@ def home_ui():
                 class_="out-grid",
             ),
             ui.hr(class_="rule"),
-            # ── Data Units ───────────────────────────────────────────────────
             ui.div(ui.div("Data Units", class_="label"), style="margin-bottom:14px;"),
             ui.div(
                 ui.div(
