@@ -45,3 +45,5 @@ examples/*.xlsx
 # Local environment files
 .env
 .env.*
+
+.claude/*

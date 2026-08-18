@@ -42,7 +42,7 @@ def test_export_results_to_excel_has_required_sheets():
         workbook.close()
 
         expected_sheets = [
-            "policy_summary",
+            "diagnostics_summary",
             "summary",
             "allocation_matrix",
             "route_allocation",
@@ -56,7 +56,7 @@ def test_export_results_to_excel_has_required_sheets():
             assert sheet in sheet_names
 
 
-def test_policy_summary_sheet_has_policy_fields():
+def test_diagnostics_summary_sheet_has_diagnostic_fields():
     opt_result, processed, cc, rf, tc = get_report_data()
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -64,18 +64,16 @@ def test_policy_summary_sheet_has_policy_fields():
         result_path = export_results_to_excel(opt_result, processed, cc, rf, tc, path)
 
         workbook = load_workbook(result_path, data_only=True)
-        worksheet = workbook["policy_summary"]
+        worksheet = workbook["diagnostics_summary"]
         metrics = [worksheet.cell(row=row, column=1).value for row in range(2, worksheet.max_row + 1)]
         workbook.close()
 
         expected_metrics = [
-            "Economic Status",
-            "Supply Status",
-            "Capacity Status",
-            "Bottleneck Status",
-            "Policy Priority",
-            "Policy Insight",
-            "Recommended Next Analysis",
+            "Supply Absorption (%)",
+            "System Capacity Utilization (%)",
+            "Maximum Facility Utilization (%)",
+            "Binding Capacity Facilities",
+            "Binding Supply Centers",
         ]
 
         for metric in expected_metrics:
@@ -95,7 +93,7 @@ def test_summary_sheet_has_economic_metrics():
         workbook.close()
 
         assert "Solver Status" in metrics
-        assert "Economic Status" in metrics
+        assert "Objective Status" in metrics
         assert "Minimum Net Cost Objective (Rp/year)" in metrics
 
 

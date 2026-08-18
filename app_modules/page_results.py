@@ -19,16 +19,21 @@ def format_rupiah_abs(value):
     return f"Rp {abs(float(value)):,.0f}/year"
 
 
+def _clamp_near_zero(value, tolerance=1e-6):
+    value = float(value)
+    return 0.0 if abs(value) < tolerance else value
+
+
 def format_kg(value):
     if value is None:
         return "N/A"
-    return f"{float(value):,.0f} kg"
+    return f"{_clamp_near_zero(value):,.0f} kg"
 
 
 def format_number(value):
     if value is None:
         return "N/A"
-    return f"{float(value):,.0f}"
+    return f"{_clamp_near_zero(value):,.0f}"
 
 
 def format_rp_value(value):
@@ -78,7 +83,7 @@ def results_ui():
     return ui.nav_panel(
         "Results",
         ui.div(
-            ui.h2("Decision Results"),
+            ui.h2("Optimization Results"),
             ui.output_ui("results_content"),
             style="padding: 1rem;",
         ),
@@ -104,8 +109,7 @@ def results_server(input, output, session, state):
         if opt_result["status"] != "Optimal":
             return ui.div(
                 ui.div(
-                    f"Solver status: {opt_result['status']}. An optimal solution was not found. "
-                    "Use this status only as a diagnostic signal, not as a policy conclusion.",
+                    f"Solver status: {opt_result['status']}. An optimal solution was not found.",
                     class_="alert alert-warning",
                 )
             )
@@ -122,84 +126,45 @@ def results_server(input, output, session, state):
         runtime = opt_result["runtime"]
 
         economic_summary = processed.get("economic_summary", {})
-        policy_insight = processed.get("policy_insight", {})
+        system_metrics = processed.get("system_metrics", {})
 
         economic_status = economic_summary.get("economic_status", "Unknown")
-        economic_value_label = economic_summary.get("economic_value_label", "Estimated Net Economic Value")
+        economic_value_label = economic_summary.get("economic_value_label", "Modeled Objective Value")
         economic_value_abs = economic_summary.get("net_economic_value_abs")
         economic_message = economic_summary.get("economic_message", "")
         economic_badge_class = economic_summary.get("economic_badge_class", "badge bg-secondary")
         economic_alert_class = economic_summary.get("economic_alert_class", "alert alert-secondary")
 
-        supply_status = policy_insight.get("supply_status", "Unknown")
-        capacity_status = policy_insight.get("capacity_status", "Unknown")
-        policy_priority = policy_insight.get("policy_priority", "Review scenario results")
-        key_message = policy_insight.get("key_message", "")
-        recommended_next_analysis = policy_insight.get("recommended_next_analysis", "")
-        supply_absorption_pct = policy_insight.get("supply_absorption_pct")
-        system_capacity_utilization_pct = policy_insight.get("system_capacity_utilization_pct")
-        max_facility_utilization_pct = policy_insight.get("max_facility_utilization_pct")
+        supply_absorption_pct = system_metrics.get("supply_absorption_pct")
+        system_capacity_utilization_pct = system_metrics.get("system_capacity_utilization_pct")
+        max_facility_utilization_pct = system_metrics.get("max_facility_utilization_pct")
 
         return ui.div(
-            ui.h3("Executive Decision Summary"),
+            ui.h3("1. Optimization Summary"),
             ui.layout_columns(
                 ui.card(
-                    ui.card_header("Economic Status"),
-                    ui.card_body(
-                        ui.div(economic_status, class_=economic_badge_class)
-                    ),
+                    ui.card_header("Solver Status"),
+                    ui.card_body(ui.div(opt_result["status"], class_="badge bg-secondary")),
                 ),
                 ui.card(
-                    ui.card_header("Supply Status"),
-                    ui.card_body(
-                        ui.div(supply_status, class_="badge bg-primary")
-                    ),
-                ),
-                ui.card(
-                    ui.card_header("Capacity Status"),
-                    ui.card_body(
-                        ui.div(capacity_status, class_="badge bg-info text-dark")
-                    ),
-                ),
-                ui.card(
-                    ui.card_header("Policy Priority"),
-                    ui.card_body(
-                        ui.p(policy_priority, style="font-weight: bold; margin-bottom: 0;")
-                    ),
-                ),
-                col_widths=[3, 3, 3, 3],
-            ),
-            ui.div(
-                ui.h4("Policy Insight"),
-                ui.p(key_message),
-                ui.tags.strong("Recommended next analysis: "),
-                ui.span(recommended_next_analysis),
-                class_="alert alert-primary",
-                style="margin-top: 1rem;",
-            ),
-            ui.h3("Key Indicators", style="margin-top: 1.5rem;"),
-            ui.layout_columns(
-                ui.card(
-                    ui.card_header(economic_value_label),
-                    ui.card_body(
-                        ui.p(format_rupiah_abs(economic_value_abs))
-                    ),
+                    ui.card_header("Objective Status"),
+                    ui.card_body(ui.div(economic_status, class_=economic_badge_class)),
                 ),
                 ui.card(
                     ui.card_header("Supply Absorption"),
                     ui.card_body(ui.p(format_percent(supply_absorption_pct))),
                 ),
                 ui.card(
-                    ui.card_header("System Capacity Use"),
+                    ui.card_header("System Capacity Utilization"),
                     ui.card_body(ui.p(format_percent(system_capacity_utilization_pct))),
-                ),
-                ui.card(
-                    ui.card_header("Highest Facility Use"),
-                    ui.card_body(ui.p(format_percent(max_facility_utilization_pct))),
                 ),
                 col_widths=[3, 3, 3, 3],
             ),
             ui.layout_columns(
+                ui.card(
+                    ui.card_header(economic_value_label),
+                    ui.card_body(ui.p(format_rupiah_abs(economic_value_abs))),
+                ),
                 ui.card(
                     ui.card_header("Total Allocated"),
                     ui.card_body(ui.p(format_kg(total_alloc))),
@@ -212,10 +177,6 @@ def results_server(input, output, session, state):
                     ui.card_header("Unused Capacity"),
                     ui.card_body(ui.p(format_kg(total_unused_cap))),
                 ),
-                ui.card(
-                    ui.card_header("Runtime"),
-                    ui.card_body(ui.p(f"{runtime:.4f} s")),
-                ),
                 col_widths=[3, 3, 3, 3],
             ),
             ui.div(
@@ -223,21 +184,22 @@ def results_server(input, output, session, state):
                 class_=economic_alert_class,
                 style="margin-top: 1rem;",
             ),
-            ui.h3("Technical Objective", style="margin-top: 1.5rem;"),
             ui.card(
                 ui.card_header("Minimum Net Cost Objective"),
                 ui.card_body(
                     ui.p(format_rupiah(obj)),
-                    ui.tags.small(
-                        "This technical value is the LP objective. A negative value indicates a positive net benefit when recovered material revenue exceeds total cost."
-                    ),
+                    ui.tags.small(f"Solver runtime: {runtime:.4f} s."),
                 ),
+                style="margin-top: 1rem;",
             ),
-            ui.h3("Allocation Matrix (kg/year)", style="margin-top: 1.5rem;"),
+            ui.h3("2. Allocation Results", style="margin-top: 1.5rem;"),
+            ui.h4("Allocation Matrix (kg/year)"),
             ui.output_table("alloc_matrix_table"),
-            ui.h3("Route Allocation Detail", style="margin-top: 1.5rem;"),
+            ui.h4("Route Allocation Detail", style="margin-top: 1rem;"),
             ui.output_table("route_table"),
-            ui.h3("Charts", style="margin-top: 1.5rem;"),
+            ui.h3("3. Capacity Utilization", style="margin-top: 1.5rem;"),
+            ui.p(f"Most utilized facility: {system_metrics.get('most_utilized_facility', 'N/A')} "
+                 f"({format_percent(max_facility_utilization_pct)})."),
             ui.layout_columns(
                 ui.card(
                     ui.card_header("Facility Utilization (%)"),
@@ -249,10 +211,11 @@ def results_server(input, output, session, state):
                 ),
                 col_widths=[6, 6],
             ),
-            ui.h3("Constraint Analysis", style="margin-top: 1.5rem;"),
+            ui.h3("4. Constraint Diagnostics and Shadow Prices", style="margin-top: 1.5rem;"),
             ui.output_table("constraint_table"),
-            ui.h3("Technical Interpretation", style="margin-top: 1.5rem;"),
+            ui.h3("5. Optimization Result Interpretation", style="margin-top: 1.5rem;"),
             ui.output_ui("interpretation_block"),
+            ui.h3("6. Export Results", style="margin-top: 1.5rem;"),
             ui.div(
                 ui.download_button("download_results", "Export Results to Excel (.xlsx)", class_="btn-success"),
                 ui.download_button("download_configuration", "Export Current Configuration (.xlsx)", class_="btn-primary"),

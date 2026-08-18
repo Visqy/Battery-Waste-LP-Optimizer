@@ -18,20 +18,21 @@ def home_ui():
         ui.div(
             ui.div(
                 ui.div(
-                    "Decision Support Tool · Java Island, Indonesia",
+                    "Allocation Analysis Tool · Java Island, Indonesia",
                     class_="label",
                 ),
-                ui.h1("NMC Battery Recycling Policy Decision Support Tool"),
+                ui.h1("NMC Battery Recycling Allocation Optimizer"),
                 ui.p(
-                    "A decision support interface for evaluating allocation, capacity, "
-                    "and economic outcomes in the NMC electric vehicle battery recycling "
-                    "supply chain on Java Island, Indonesia.",
+                    "An open-source Shiny for Python application for linear-programming-based "
+                    "battery recycling allocation analysis in the NMC electric vehicle battery "
+                    "recycling supply chain on Java Island, Indonesia.",
                     class_="body-text",
                 ),
                 ui.p(
-                    "The software is designed for researchers, planners, and policy "
-                    "stakeholders who need transparent scenario-based evidence for "
-                    "recycling network assessment.",
+                    "The application validates scenario data, solves a documented linear "
+                    "programming model, and presents allocation, capacity utilization, "
+                    "constraint diagnostics, and exportable optimization results for "
+                    "researchers, planners, and supply-chain analysts.",
                     class_="body-text",
                 ),
                 class_="page-header",
@@ -39,23 +40,23 @@ def home_ui():
             ui.hr(class_="rule rule--lg"),
             ui.div(
                 ui.div(
-                    ui.div("Decision Questions", class_="label"),
+                    ui.div("Analysis Questions", class_="label"),
                     ui.tags.ul(
                         ui.tags.li(
                             "Can the current recycling network absorb the available "
                             "NMC battery waste supply?"
                         ),
                         ui.tags.li(
-                            "Does the scenario generate a positive net economic benefit?"
+                            "What is the modeled net benefit or net cost for the scenario?"
                         ),
                         ui.tags.li(
                             "Is there unused supply or unused facility capacity?"
                         ),
                         ui.tags.li(
-                            "Which facilities may become bottlenecks under the current scenario?"
+                            "Which facilities reach a binding capacity constraint under the current scenario?"
                         ),
                         ui.tags.li(
-                            "What follow-up analysis should be considered before policy action?"
+                            "What follow-up scenario or sensitivity analysis should be considered next?"
                         ),
                         class_="q-list",
                     ),
@@ -102,7 +103,7 @@ def home_ui():
             ui.hr(class_="rule rule--lg"),
             ui.div(
                 ui.div("Workflow", class_="label"),
-                ui.h2("Stakeholder Workflow"),
+                ui.h2("User Workflow"),
                 class_="sec-head",
             ),
             ui.div(
@@ -122,8 +123,8 @@ def home_ui():
                 ),
                 _wf_step(
                     "04", "Review Summary",
-                    "Read the executive decision summary, policy insight, and key "
-                    "indicators before reviewing technical tables.",
+                    "Read the optimization summary and key indicators before "
+                    "reviewing allocation and constraint tables.",
                 ),
                 _wf_step(
                     "05", "Export Evidence",
@@ -141,7 +142,7 @@ def home_ui():
             ui.div(
                 ui.div(
                     ui.span("01", class_="out-n"),
-                    "Economic status and estimated net benefit or net cost",
+                    "Modeled objective status and net benefit or net cost",
                     class_="out-item",
                 ),
                 ui.div(
@@ -156,7 +157,7 @@ def home_ui():
                 ),
                 ui.div(
                     ui.span("04", class_="out-n"),
-                    "Policy priority score and recommended next-step analysis",
+                    "Excel export of optimization results and current scenario configuration",
                     class_="out-item",
                 ),
                 ui.div(
@@ -186,7 +187,7 @@ def home_ui():
                 ),
                 ui.div(
                     ui.span("—", class_="out-n"),
-                    "Reference period: Peak operating period, Period 4, Kasy et al. 2024",
+                    "Reference period: Illustrative baseline scenario, Period 4 projection, Kasy et al. 2024",
                     class_="out-item",
                     style="border-bottom: none;",
                 ),

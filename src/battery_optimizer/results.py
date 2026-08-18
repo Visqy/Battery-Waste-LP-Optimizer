@@ -121,30 +121,32 @@ def build_constraint_table(opt_result, cc_df, rf_df):
     for i in opt_result["cc_ids"]:
         slack = opt_result["supply_slacks"].get(i)
         shadow = opt_result["supply_shadow"].get(i)
+        is_binding = (abs(slack) < 1e-4) if slack is not None else None
         rows.append(
             {
                 "constraint_type": "Supply",
                 "id": i,
                 "name": cc_name_map.get(i, i),
                 "rhs_kg": supply_map.get(i, 0.0),
-                "slack_kg": slack if slack is not None else 0.0,
+                "slack_kg": 0.0 if is_binding else (slack if slack is not None else 0.0),
                 "shadow_price_rp_kg": shadow,
-                "binding": (abs(slack) < 1e-4) if slack is not None else None,
+                "binding": is_binding,
             }
         )
 
     for j in opt_result["rf_ids"]:
         slack = opt_result["capacity_slacks"].get(j)
         shadow = opt_result["capacity_shadow"].get(j)
+        is_binding = (abs(slack) < 1e-4) if slack is not None else None
         rows.append(
             {
                 "constraint_type": "Capacity",
                 "id": j,
                 "name": rf_name_map.get(j, j),
                 "rhs_kg": cap_map.get(j, 0.0),
-                "slack_kg": slack if slack is not None else 0.0,
+                "slack_kg": 0.0 if is_binding else (slack if slack is not None else 0.0),
                 "shadow_price_rp_kg": shadow,
-                "binding": (abs(slack) < 1e-4) if slack is not None else None,
+                "binding": is_binding,
             }
         )
 
@@ -160,10 +162,10 @@ def build_economic_summary(opt_result):
             "net_economic_value": None,
             "net_economic_value_abs": None,
             "economic_status": "Unknown",
-            "economic_value_label": "Estimated Net Economic Value",
+            "economic_value_label": "Modeled Objective Value",
             "economic_alert_class": "alert alert-secondary",
             "economic_badge_class": "badge bg-secondary",
-            "economic_message": "Economic result is not available.",
+            "economic_message": "Objective value is not available.",
         }
 
     objective_value = float(objective_value)
@@ -175,16 +177,15 @@ def build_economic_summary(opt_result):
             "objective_value": objective_value,
             "net_economic_value": net_economic_value,
             "net_economic_value_abs": net_economic_value_abs,
-            "economic_status": "Positive Net Benefit",
-            "economic_value_label": "Estimated Net Benefit",
-            "economic_alert_class": "alert alert-success",
-            "economic_badge_class": "badge bg-success",
+            "economic_status": "Net Benefit (Modeled)",
+            "economic_value_label": "Modeled Net Benefit",
+            "economic_alert_class": "alert alert-secondary",
+            "economic_badge_class": "badge bg-secondary",
             "economic_message": (
-                "A negative objective value does not indicate a loss. It occurs because "
-                "the model minimizes net cost, where transportation and processing costs "
-                "are offset by recovered material revenue. In this scenario, recovered "
-                "material revenue exceeds total cost, so the result represents a positive "
-                "net economic benefit."
+                "A negative objective value indicates that, under the supplied scenario "
+                "parameters, modeled recovered material revenue exceeds the transportation "
+                "and processing costs included in the objective function. This value is the "
+                "model's calculated result for the scenario parameters supplied by the user."
             ),
         }
 
@@ -193,14 +194,16 @@ def build_economic_summary(opt_result):
             "objective_value": objective_value,
             "net_economic_value": net_economic_value,
             "net_economic_value_abs": net_economic_value_abs,
-            "economic_status": "Net Economic Cost",
-            "economic_value_label": "Estimated Net Cost",
-            "economic_alert_class": "alert alert-warning",
-            "economic_badge_class": "badge bg-warning text-dark",
+            "economic_status": "Net Cost (Modeled)",
+            "economic_value_label": "Modeled Net Cost",
+            "economic_alert_class": "alert alert-secondary",
+            "economic_badge_class": "badge bg-secondary",
             "economic_message": (
-                "A positive objective value indicates that transportation and processing "
-                "costs exceed recovered material revenue. This scenario produces a net "
-                "economic cost."
+                "A positive objective value indicates that, under the supplied scenario "
+                "parameters, the transportation and processing costs included in the "
+                "objective function exceed modeled recovered material revenue. This value "
+                "is the model's calculated result for the scenario parameters supplied by "
+                "the user."
             ),
         }
 
@@ -208,13 +211,14 @@ def build_economic_summary(opt_result):
         "objective_value": objective_value,
         "net_economic_value": net_economic_value,
         "net_economic_value_abs": 0.0,
-        "economic_status": "Break Even",
-        "economic_value_label": "Estimated Net Economic Value",
-        "economic_alert_class": "alert alert-info",
-        "economic_badge_class": "badge bg-info text-dark",
+        "economic_status": "Break Even (Modeled)",
+        "economic_value_label": "Modeled Objective Value",
+        "economic_alert_class": "alert alert-secondary",
+        "economic_badge_class": "badge bg-secondary",
         "economic_message": (
-            "The objective value is zero. This indicates a break-even condition where "
-            "total cost and recovered material revenue are balanced."
+            "The objective value is zero, indicating that modeled transportation and "
+            "processing costs equal modeled recovered material revenue under the supplied "
+            "scenario parameters."
         ),
     }
 
@@ -290,149 +294,6 @@ def calculate_system_metrics(opt_result, cc_df, rf_df):
     }
 
 
-def generate_policy_insight(opt_result, cc_df, rf_df):
-    if opt_result["status"] != "Optimal":
-        return {
-            "economic_status": "Unknown",
-            "supply_status": "Unknown",
-            "capacity_status": "Unknown",
-            "bottleneck_status": "Unknown",
-            "policy_priority": "Review input data and solver status",
-            "key_message": (
-                "The model did not return an optimal solution. Policy interpretation should "
-                "not be drawn before input data and solver status are reviewed."
-            ),
-            "recommended_next_analysis": (
-                "Review validation results, check parameter consistency, and re-run the optimization."
-            ),
-            "supply_absorption_pct": None,
-            "system_capacity_utilization_pct": None,
-            "max_facility_utilization_pct": None,
-            "binding_capacity_facilities": [],
-            "binding_supply_centers": [],
-        }
-
-    economic_summary = build_economic_summary(opt_result)
-    metrics = calculate_system_metrics(opt_result, cc_df, rf_df)
-
-    unused_supply = metrics["unused_supply_kg"]
-    unused_capacity = metrics["unused_capacity_kg"]
-    supply_absorption_pct = metrics["supply_absorption_pct"]
-    system_capacity_utilization_pct = metrics["system_capacity_utilization_pct"]
-    max_facility_utilization_pct = metrics["max_facility_utilization_pct"]
-    binding_capacity = metrics["binding_capacity_facilities"]
-
-    if unused_supply <= 1e-4 or supply_absorption_pct >= 99.9:
-        supply_status = "Full Supply Absorption"
-    else:
-        supply_status = "Partial Supply Absorption"
-
-    if binding_capacity or max_facility_utilization_pct >= 99.9:
-        capacity_status = "Capacity Bottleneck"
-        bottleneck_status = "Capacity Bottleneck Detected"
-    elif max_facility_utilization_pct >= 85.0:
-        capacity_status = "High Capacity Pressure"
-        bottleneck_status = "Potential Capacity Pressure"
-    elif unused_capacity > 1e-4:
-        capacity_status = "Capacity Reserve Available"
-        bottleneck_status = "No Capacity Bottleneck"
-    else:
-        capacity_status = "Balanced Capacity Use"
-        bottleneck_status = "No Capacity Bottleneck"
-
-    if economic_summary["economic_status"] == "Positive Net Benefit":
-        economic_sentence = (
-            "The scenario indicates a positive net economic benefit because recovered "
-            "material revenue exceeds transportation and processing costs."
-        )
-    elif economic_summary["economic_status"] == "Net Economic Cost":
-        economic_sentence = (
-            "The scenario indicates a net economic cost because transportation and "
-            "processing costs exceed recovered material revenue."
-        )
-    elif economic_summary["economic_status"] == "Break Even":
-        economic_sentence = (
-            "The scenario indicates a break-even economic condition."
-        )
-    else:
-        economic_sentence = (
-            "The economic status cannot be interpreted from the current result."
-        )
-
-    if supply_status == "Full Supply Absorption":
-        supply_sentence = (
-            f"The model allocates {supply_absorption_pct:.1f}% of available NMC battery waste supply. "
-            "This indicates that the current network can absorb the available supply in this scenario."
-        )
-    else:
-        supply_sentence = (
-            f"The model allocates {supply_absorption_pct:.1f}% of available NMC battery waste supply. "
-            f"About {unused_supply:,.0f} kg remains unallocated, indicating a potential processing or routing gap."
-        )
-
-    if capacity_status == "Capacity Bottleneck":
-        capacity_sentence = (
-            "At least one recycling facility reaches its capacity limit. This indicates a capacity bottleneck "
-            "that may require further assessment of expansion, operational scheduling, or additional processing partnerships."
-        )
-        policy_priority = "Assess capacity expansion or additional processing partnership"
-        recommended_next_analysis = (
-            "Run future demand scenarios, compare capacity expansion options, and test alternative route-cost assumptions."
-        )
-    elif capacity_status == "High Capacity Pressure":
-        capacity_sentence = (
-            f"The most utilized facility is {metrics['most_utilized_facility']} at "
-            f"{max_facility_utilization_pct:.1f}% utilization. This indicates high capacity pressure."
-        )
-        policy_priority = "Monitor facility utilization and prepare capacity contingency options"
-        recommended_next_analysis = (
-            "Run sensitivity analysis on future supply growth and test whether capacity constraints become binding."
-        )
-    elif supply_status == "Partial Supply Absorption":
-        capacity_sentence = (
-            "The network does not absorb all available supply. This may point to insufficient capacity, incomplete routing, "
-            "or cost assumptions that discourage allocation."
-        )
-        policy_priority = "Investigate unallocated supply and network coverage"
-        recommended_next_analysis = (
-            "Check route completeness, validate cost assumptions, and compare scenarios with increased capacity."
-        )
-    elif economic_summary["economic_status"] == "Net Economic Cost":
-        capacity_sentence = (
-            "The network can be operated, but the estimated economic outcome is not favorable under current parameters."
-        )
-        policy_priority = "Review cost structure and recovered material revenue assumptions"
-        recommended_next_analysis = (
-            "Run sensitivity analysis on transport cost, processing cost, and recovered material revenue."
-        )
-    else:
-        capacity_sentence = (
-            f"The system still has {unused_capacity:,.0f} kg of unused facility capacity. "
-            "Immediate capacity expansion is not the main priority in this scenario."
-        )
-        policy_priority = "Maintain collection reliability and active facility operation"
-        recommended_next_analysis = (
-            "Monitor future battery waste growth and update the scenario when supply projections change."
-        )
-
-    key_message = " ".join([economic_sentence, supply_sentence, capacity_sentence])
-
-    return {
-        "economic_status": economic_summary["economic_status"],
-        "supply_status": supply_status,
-        "capacity_status": capacity_status,
-        "bottleneck_status": bottleneck_status,
-        "policy_priority": policy_priority,
-        "key_message": key_message,
-        "recommended_next_analysis": recommended_next_analysis,
-        "supply_absorption_pct": supply_absorption_pct,
-        "system_capacity_utilization_pct": system_capacity_utilization_pct,
-        "max_facility_utilization_pct": max_facility_utilization_pct,
-        "binding_capacity_facilities": binding_capacity,
-        "binding_supply_centers": metrics["binding_supply_centers"],
-    }
-
-
 def generate_interpretation(opt_result, cc_df, rf_df):
     if opt_result["status"] != "Optimal":
         return (
@@ -455,12 +316,12 @@ def generate_interpretation(opt_result, cc_df, rf_df):
 
     if obj < 0:
         lines.append(
-            f"Because the objective value is negative, the result should be interpreted as an estimated net benefit of Rp {net_value_abs:,.0f} per year. "
+            f"Because the objective value is negative, the result represents a modeled net benefit of Rp {net_value_abs:,.0f} per year. "
             "The negative value occurs because recovered material revenue is greater than transportation and processing costs."
         )
     elif obj > 0:
         lines.append(
-            f"Because the objective value is positive, the result indicates an estimated net cost of Rp {net_value_abs:,.0f} per year. "
+            f"Because the objective value is positive, the result represents a modeled net cost of Rp {net_value_abs:,.0f} per year. "
             "In this scenario, total cost remains greater than recovered material revenue."
         )
     else:
@@ -477,8 +338,13 @@ def generate_interpretation(opt_result, cc_df, rf_df):
     if metrics["binding_capacity_facilities"]:
         lines.append(
             f"The binding capacity constraints are {', '.join(metrics['binding_capacity_facilities'])}. "
-            "These facilities operate at full capacity and act as bottlenecks."
+            "These facilities operate at full capacity in this solution."
         )
+
+    lines.append(
+        "This interpretation describes properties of the model solution for the "
+        "scenario parameters supplied by the user."
+    )
 
     return " ".join(lines)
 
@@ -490,7 +356,7 @@ def process_all_results(opt_result, cc_df, rf_df, tc_df):
     route_table = build_route_allocation_table(opt_result, cc_df, rf_df, tc_df)
     constraint_table = build_constraint_table(opt_result, cc_df, rf_df)
     economic_summary = build_economic_summary(opt_result)
-    policy_insight = generate_policy_insight(opt_result, cc_df, rf_df)
+    system_metrics = calculate_system_metrics(opt_result, cc_df, rf_df)
     interpretation = generate_interpretation(opt_result, cc_df, rf_df)
 
     return {
@@ -500,6 +366,6 @@ def process_all_results(opt_result, cc_df, rf_df, tc_df):
         "route_table": route_table,
         "constraint_table": constraint_table,
         "economic_summary": economic_summary,
-        "policy_insight": policy_insight,
+        "system_metrics": system_metrics,
         "interpretation": interpretation,
     }

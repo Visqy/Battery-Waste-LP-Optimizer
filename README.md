@@ -1,8 +1,8 @@
-# NMC Battery Recycling Policy Decision Support Tool
+# NMC Battery Recycling Allocation Optimizer
 
-A Shiny for Python decision support tool for evaluating allocation, capacity, and economic outcomes in the Nickel-Manganese-Cobalt (NMC) electric vehicle battery recycling supply chain on Java Island, Indonesia.
+An open-source Shiny for Python application for linear-programming-based battery recycling allocation analysis in the Nickel-Manganese-Cobalt (NMC) electric vehicle battery recycling supply chain on Java Island, Indonesia.
 
-The software implements a locked single-objective Linear Programming (LP) model. It supports Excel-based scenario input, manual parameter editing, input validation, optimization, decision-oriented interpretation, technical result inspection, and Excel export.
+The software implements a locked single-objective Linear Programming (LP) model. It supports Excel-based scenario input, manual parameter editing, input validation, optimization, allocation and constraint diagnostics, technical result inspection, and Excel export.
 
 Model reference: Kasy et al. (2024), Jurnal Optimasi Sistem Industri, 23(2), 207-226.
 
@@ -10,23 +10,23 @@ Model reference: Kasy et al. (2024), Jurnal Optimasi Sistem Industri, 23(2), 207
 
 This software is designed for:
 
-- Policy stakeholders who need scenario-based evidence for recycling network assessment
-- Public sector planners working on electric vehicle battery waste management
 - Researchers studying reverse logistics and battery recycling optimization
+- Supply-chain planners and analysts who need scenario-based allocation evidence
+- Public sector planners working on electric vehicle battery waste management
 - Technical users who need transparent LP-based allocation results
 
-The software does not automatically prescribe policy. It provides structured optimization evidence to support further analysis.
+The software does not provide validated policy prescriptions or automatic real-world investment recommendations. It provides structured optimization evidence to support further analysis.
 
-## Main Decision Questions
+## Main Analysis Questions
 
 The software helps answer:
 
 - Can the current recycling network absorb the available NMC battery waste supply?
-- Does the scenario produce a positive net economic benefit or a net economic cost?
+- What is the modeled net benefit or net cost for the scenario?
 - Is there unused supply that remains unallocated?
 - Is there unused processing capacity?
-- Which recycling facilities may become bottlenecks?
-- What follow-up analysis should be considered before policy action?
+- Which recycling facilities reach a binding capacity constraint?
+- What follow-up scenario or sensitivity analysis should be considered next?
 
 ## Installation
 
@@ -83,7 +83,6 @@ The current test suite covers:
 - Input validation
 - LP optimization
 - Result processing
-- Policy insight generation
 - Excel report export
 
 ## Repository Structure
@@ -250,24 +249,20 @@ $y_j = 1,\quad \forall j \in J$
 
 All recycling facilities are assumed active. Facility location decisions are not optimized in this implementation.
 
-## Decision-Oriented Outputs
+## Optimization Summary Outputs
 
-The Results page displays an executive decision summary before technical tables.
+The Results page displays an optimization summary before allocation and constraint tables.
 
 Main indicators include:
 
-- Economic status
-- Supply status
-- Capacity status
-- Bottleneck status
-- Policy priority
-- Recommended next analysis
-- Estimated net benefit or estimated net cost
+- Solver status
+- Objective status (modeled net benefit, net cost, or break even)
+- Modeled net benefit or modeled net cost
 - Supply absorption percentage
 - System capacity utilization percentage
 - Maximum facility utilization percentage
 
-These indicators are generated using deterministic rule-based logic. They support decision review but do not replace policy judgment.
+These indicators are computed directly from the LP solution for the scenario parameters supplied by the user.
 
 ## Technical Outputs
 
@@ -295,7 +290,7 @@ The software supports two export types.
 Expected sheets:
 
 ```text
-policy_summary
+diagnostics_summary
 summary
 allocation_matrix
 route_allocation
@@ -347,7 +342,7 @@ The current configuration workbook can be uploaded again as a reusable scenario.
 8. Facility location decisions are not optimized.
 9. Multi-period planning is not supported.
 10. Stochastic supply and demand uncertainty are not modeled.
-11. Policy insight is rule-based and should be interpreted as decision support, not automatic policy prescription.
+11. The software does not provide validated policy prescriptions or automatic real-world investment recommendations; results should be interpreted alongside domain expertise.
 
 ## Citation
 
@@ -356,7 +351,7 @@ If you use this software, cite both the software and the model reference.
 Software citation:
 
 ```text
-TODO_AUTHOR_FULL_NAME. (2026). NMC Battery Recycling Policy Decision Support Tool. Version 1.0.0. MIT License. TODO_REPOSITORY_URL
+Chaerani, D., Napitupulu, H., Saputra, M. P. A., & Sabiq, M. I. (2026). NMC Battery Recycling Allocation Optimizer. Version 1.0.0. MIT License. https://github.com/Visqy/NMC-Battery-Recycling-Allocation-Optimizer
 ```
 
 Model reference:

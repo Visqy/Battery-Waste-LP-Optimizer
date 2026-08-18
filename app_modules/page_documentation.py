@@ -33,7 +33,7 @@ def documentation_ui():
             ),
             ui.p(
                 "This page combines model documentation, user guidance, and result interpretation "
-                "guidance for researchers, technical users, and policy stakeholders.",
+                "guidance for researchers, technical users, and supply-chain analysts.",
                 class_="body-text",
             ),
             ui.hr(class_="rule rule--sm"),
@@ -46,14 +46,14 @@ def documentation_ui():
                             "Use this workflow when preparing and evaluating a recycling supply chain scenario."
                         ),
                         ui.tags.ol(
-                            ui.tags.li("Open the application and review the Home page to understand the decision context."),
+                            ui.tags.li("Open the application and review the Home page for an overview of the software scope."),
                             ui.tags.li("Use the default baseline data or download the Excel input template."),
                             ui.tags.li("Upload a completed Excel input file or edit parameters directly in the Parameter Editor."),
                             ui.tags.li("Run validation before optimization."),
                             ui.tags.li("Fix all validation errors if any are found."),
                             ui.tags.li("Run optimization using the locked LP model."),
-                            ui.tags.li("Review the Executive Decision Summary in the Results page."),
-                            ui.tags.li("Review Policy Insight and Recommended Next Analysis before inspecting technical tables."),
+                            ui.tags.li("Review the Optimization Summary in the Results page."),
+                            ui.tags.li("Inspect the allocation, capacity utilization, and constraint diagnostic tables."),
                             ui.tags.li("Export the result workbook for documentation and discussion."),
                             ui.tags.li("Export the current configuration if the scenario should be reused later."),
                         ),
@@ -61,9 +61,9 @@ def documentation_ui():
                         guide_card(
                             "Home",
                             ui.tags.ul(
-                                ui.tags.li("Explains the decision context and key questions."),
-                                ui.tags.li("Summarizes the model scope and stakeholder workflow."),
-                                ui.tags.li("Use this page to check whether the software fits the intended decision problem."),
+                                ui.tags.li("Explains the software scope and key analysis questions."),
+                                ui.tags.li("Summarizes the model scope and user workflow."),
+                                ui.tags.li("Use this page to check whether the software fits the intended analysis task."),
                             ),
                         ),
                         guide_card(
@@ -103,32 +103,33 @@ def documentation_ui():
                             ui.tags.ul(
                                 ui.tags.li("Runs the locked LP model using PuLP and the CBC solver."),
                                 ui.tags.li("Shows solver status, objective value, and runtime."),
-                                ui.tags.li("A non-optimal solver status should not be used as a policy conclusion."),
+                                ui.tags.li("A non-optimal solver status indicates the model did not converge to a feasible optimum; review input data before proceeding."),
                             ),
                         ),
                         guide_card(
                             "Results",
                             ui.tags.ul(
-                                ui.tags.li("Shows the executive decision summary, policy insight, key indicators, and technical results."),
-                                ui.tags.li("Use the decision summary before reading allocation and constraint tables."),
+                                ui.tags.li("Shows the optimization summary, allocation results, capacity utilization, and constraint diagnostics."),
+                                ui.tags.li("Review the optimization summary before reading allocation and constraint tables."),
                                 ui.tags.li("Export results and current configuration from this page."),
                             ),
                         ),
                     ),
                 ),
                 ui.nav_panel(
-                    "Decision Interpretation Guide",
+                    "Result Interpretation Guide",
                     ui.div(
                         ui.h3("How to Read the Results"),
                         ui.p(
-                            "The Results page is designed to show decision-oriented information first, "
-                            "followed by technical optimization details."
+                            "The Results page shows summary metrics first, followed by allocation, "
+                            "capacity utilization, and constraint diagnostic detail."
                         ),
-                        ui.h4("Economic Status"),
+                        ui.h4("Objective Status"),
                         ui.tags.ul(
-                            ui.tags.li("Positive Net Benefit means recovered material revenue exceeds transportation and processing costs."),
-                            ui.tags.li("Net Economic Cost means transportation and processing costs exceed recovered material revenue."),
-                            ui.tags.li("Break Even means total cost and recovered material revenue are balanced."),
+                            ui.tags.li("Net Benefit (Modeled) means modeled recovered material revenue exceeds transportation and processing costs in the objective function."),
+                            ui.tags.li("Net Cost (Modeled) means transportation and processing costs exceed modeled recovered material revenue in the objective function."),
+                            ui.tags.li("Break Even (Modeled) means the two are balanced."),
+                            ui.tags.li("These labels describe a property of the model solution for the scenario parameters supplied by the user."),
                         ),
                         ui.h4("Minimum Net Cost Objective"),
                         ui.HTML(
@@ -143,39 +144,23 @@ def documentation_ui():
                             \]
                             </p>
                             <p>
-                            A negative objective value does not indicate a loss. It indicates
-                            a positive net benefit when recovered material revenue is larger
-                            than transportation and processing costs.
+                            A negative objective value indicates that, under the supplied scenario
+                            parameters, modeled recovered material revenue exceeds transportation
+                            and processing costs. This is the model's calculated result for the
+                            scenario parameters supplied by the user.
                             </p>
                             """
                         ),
-                        ui.h4("Supply Status"),
+                        ui.h4("Supply Absorption and Capacity Utilization"),
                         ui.tags.ul(
-                            ui.tags.li("Full Supply Absorption means nearly all available supply is allocated."),
-                            ui.tags.li("Partial Supply Absorption means some supply remains unallocated."),
-                            ui.tags.li("Unallocated supply may indicate a capacity gap, route issue, or cost assumption that limits allocation."),
+                            ui.tags.li("Supply Absorption (%) is the share of total available supply that the model allocates."),
+                            ui.tags.li("System Capacity Utilization (%) is the share of total facility capacity used by the allocation."),
+                            ui.tags.li("These are reported as percentages and totals directly from the solution; the software does not classify them into qualitative categories."),
                         ),
-                        ui.h4("Capacity Status"),
-                        ui.tags.ul(
-                            ui.tags.li("Capacity Reserve Available means the system has unused processing capacity."),
-                            ui.tags.li("High Capacity Pressure means at least one facility is heavily utilized."),
-                            ui.tags.li("Capacity Bottleneck means at least one facility reaches its capacity limit."),
-                        ),
-                        ui.h4("Policy Priority"),
-                        ui.p(
-                            "Policy Priority translates the optimization result into a short decision-support message. "
-                            "It does not prescribe policy automatically. It identifies what should receive further attention."
-                        ),
-                        ui.h4("Recommended Next Analysis"),
-                        ui.p(
-                            "Recommended Next Analysis suggests the next scenario or sensitivity test. "
-                            "Examples include future supply growth, capacity expansion, cost variation, or recovered material revenue changes."
-                        ),
-                        ui.h4("Constraint Analysis"),
+                        ui.h4("Constraint Diagnostics and Shadow Prices"),
                         ui.tags.ul(
                             ui.tags.li("Slack shows unused supply or unused capacity in a constraint."),
                             ui.tags.li("A binding constraint has nearly zero slack."),
-                            ui.tags.li("A binding capacity constraint may indicate a facility bottleneck."),
                             ui.tags.li("Shadow prices indicate the marginal value of relaxing a constraint when available from the solver."),
                         ),
                     ),
@@ -185,17 +170,20 @@ def documentation_ui():
                     ui.div(
                         ui.h3("Software Overview"),
                         ui.p(
-                            "This software is a GUI-based decision support tool for evaluating "
-                            "the supply chain of Nickel-Manganese-Cobalt (NMC) electric vehicle "
-                            "battery recycling on Java Island, Indonesia."
+                            "This software is a GUI-based application for scenario-based allocation "
+                            "analysis of the supply chain for Nickel-Manganese-Cobalt (NMC) electric "
+                            "vehicle battery recycling on Java Island, Indonesia."
                         ),
                         ui.p(f"Version: {APP_VERSION}"),
                         ui.p(f"Reference: {REFERENCE}"),
-                        ui.h3("Decision-Support Role"),
+                        ui.h3("Software Scope"),
                         ui.p(
-                            "The software helps users evaluate allocation feasibility, facility capacity, "
-                            "economic outcome, and policy-relevant indicators under a selected scenario. "
-                            "It supports decision analysis but does not replace policy judgment."
+                            "The software supports scenario-based allocation analysis using a "
+                            "deterministic linear programming model: it validates scenario data, "
+                            "solves the LP model, and reports allocation, capacity utilization, and "
+                            "constraint diagnostics for the supplied scenario. It does not provide "
+                            "validated policy prescriptions or automatic real-world investment "
+                            "recommendations."
                         ),
                         ui.h3("Model Origin"),
                         ui.HTML(
@@ -415,7 +403,7 @@ def documentation_ui():
                             ui.tags.li(ui.HTML(r"\(s_{i}^{sup} > 0\): unused supply at collection center \(i\), non-binding.")),
                             ui.tags.li(ui.HTML(r"\(s_{i}^{sup} = 0\): all supply at collection center \(i\) is allocated, binding constraint.")),
                             ui.tags.li(ui.HTML(r"\(s_{j}^{cap} > 0\): idle capacity at recycling facility \(j\).")),
-                            ui.tags.li(ui.HTML(r"\(s_{j}^{cap} = 0\): facility \(j\) is at full capacity and acts as a bottleneck.")),
+                            ui.tags.li(ui.HTML(r"\(s_{j}^{cap} = 0\): facility \(j\) is at full capacity; this is a binding capacity constraint.")),
                         ),
                     ),
                 ),
@@ -438,7 +426,7 @@ def documentation_ui():
                             ui.tags.li("Uncertainty and stochastic supply variations are not modeled."),
                             ui.tags.li("Multi-period planning is not supported."),
                             ui.tags.li("Intermediate processing nodes, such as sortation centers, are not modeled."),
-                            ui.tags.li("Policy insight is rule-based and should be interpreted as decision support, not automatic policy prescription."),
+                            ui.tags.li("The software does not provide validated policy prescriptions or automatic real-world investment recommendations; results should be interpreted alongside domain expertise."),
                         ),
                         ui.h3("Future Development"),
                         ui.HTML(
@@ -466,11 +454,7 @@ def documentation_ui():
                             ui.tags.li(
                                 "Tadaros, M., Migdalas, A., Samuelsson, B., & Segerstedt, A. (2022). "
                                 "Location of facilities and network design for reverse logistics of "
-                                "lithium-ion batteries in Sweden. Operational Research, 22, 3789-3811."
-                            ),
-                            ui.tags.li(
-                                "Hillier, F.S., & Lieberman, G.J. (2015). "
-                                "Introduction to Operations Research (10th ed.). McGraw-Hill Education."
+                                "lithium-ion batteries in Sweden. Operational Research, 22, 895-915."
                             ),
                             ui.tags.li(
                                 "Bazaraa, M.S., Jarvis, J.J., & Sherali, H.D. (2010). "

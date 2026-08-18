@@ -218,7 +218,7 @@ def optimization_server(input, output, session, state):
                     ui.card_body(
                         ui.p(obj_text, style="font-weight: bold;"),
                         ui.tags.small(
-                            "Open the Results tab for economic status, policy insight, and decision indicators."
+                            "Open the Results tab for objective status, allocation results, and constraint diagnostics."
                         ),
                     ),
                 ),

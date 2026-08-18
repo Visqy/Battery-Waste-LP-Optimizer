@@ -1,6 +1,6 @@
 # Examples
 
-This folder stores example input and output files for the NMC Battery Recycling Supply Chain Optimizer.
+This folder stores example input and output files for the NMC Battery Recycling Allocation Optimizer.
 
 Recommended files:
 
@@ -42,6 +42,7 @@ Export Results to Excel (.xlsx)
 Expected sheets:
 
 ```text
+diagnostics_summary
 summary
 allocation_matrix
 route_allocation

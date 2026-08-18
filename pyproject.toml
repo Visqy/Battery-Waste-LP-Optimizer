@@ -5,12 +5,15 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "battery-optimizer"
 version = "1.0.0"
-description = "A Shiny for Python decision support tool for LP-based NMC electric vehicle battery recycling supply chain scenario evaluation"
+description = "An open-source Shiny for Python application for linear-programming-based NMC battery recycling allocation analysis"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
-    { name = "TODO_AUTHOR_FULL_NAME", email = "TODO_AUTHOR_EMAIL" }
+    { name = "Diah Chaerani" },
+    { name = "Herlina Napitupulu" },
+    { name = "Moch Panji Agung Saputra" },
+    { name = "Muhammad Ismail Sabiq" }
 ]
 keywords = [
     "linear programming",
@@ -19,7 +22,7 @@ keywords = [
     "electric vehicle battery waste",
     "reverse logistics",
     "supply chain optimization",
-    "decision support system",
+    "allocation optimization",
     "Shiny for Python",
     "SoftwareX"
 ]
@@ -58,9 +61,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "TODO_REPOSITORY_URL"
-Repository = "TODO_REPOSITORY_URL"
-Issues = "TODO_REPOSITORY_URL/issues"
+Homepage = "https://github.com/Visqy/NMC-Battery-Recycling-Allocation-Optimizer"
+Repository = "https://github.com/Visqy/NMC-Battery-Recycling-Allocation-Optimizer"
+Issues = "https://github.com/Visqy/NMC-Battery-Recycling-Allocation-Optimizer/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]

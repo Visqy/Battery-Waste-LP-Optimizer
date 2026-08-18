@@ -7,7 +7,6 @@ from battery_optimizer.results import (
     build_constraint_table,
     build_economic_summary,
     calculate_system_metrics,
-    generate_policy_insight,
     generate_interpretation,
     process_all_results,
 )
@@ -143,15 +142,16 @@ def test_economic_summary_has_required_keys():
         assert key in summary
 
 
-def test_negative_objective_is_positive_net_benefit():
+def test_negative_objective_is_net_benefit_modeled():
     opt_result, cc, rf, tc = get_solved_result()
     summary = build_economic_summary(opt_result)
 
     if opt_result["objective_value"] < 0:
-        assert summary["economic_status"] == "Positive Net Benefit"
+        assert summary["economic_status"] == "Net Benefit (Modeled)"
         assert summary["net_economic_value"] > 0
         assert summary["net_economic_value_abs"] > 0
         assert "negative" in summary["economic_message"].lower()
+        assert "calculated result for the scenario parameters supplied by the user" in summary["economic_message"].lower()
 
 
 def test_system_metrics_has_required_keys():
@@ -195,50 +195,6 @@ def test_system_metrics_values_are_numeric():
         assert isinstance(metrics[key], (int, float))
 
 
-def test_policy_insight_has_required_keys():
-    opt_result, cc, rf, tc = get_solved_result()
-    insight = generate_policy_insight(opt_result, cc, rf)
-
-    expected_keys = [
-        "economic_status",
-        "supply_status",
-        "capacity_status",
-        "bottleneck_status",
-        "policy_priority",
-        "key_message",
-        "recommended_next_analysis",
-        "supply_absorption_pct",
-        "system_capacity_utilization_pct",
-        "max_facility_utilization_pct",
-        "binding_capacity_facilities",
-        "binding_supply_centers",
-    ]
-
-    for key in expected_keys:
-        assert key in insight
-
-
-def test_policy_insight_is_decision_oriented():
-    opt_result, cc, rf, tc = get_solved_result()
-    insight = generate_policy_insight(opt_result, cc, rf)
-
-    assert isinstance(insight["policy_priority"], str)
-    assert isinstance(insight["key_message"], str)
-    assert isinstance(insight["recommended_next_analysis"], str)
-    assert len(insight["policy_priority"]) > 10
-    assert len(insight["key_message"]) > 50
-    assert len(insight["recommended_next_analysis"]) > 20
-
-
-def test_policy_insight_percentages_are_valid():
-    opt_result, cc, rf, tc = get_solved_result()
-    insight = generate_policy_insight(opt_result, cc, rf)
-
-    assert 0 <= insight["supply_absorption_pct"] <= 100.01
-    assert 0 <= insight["system_capacity_utilization_pct"] <= 100.01
-    assert 0 <= insight["max_facility_utilization_pct"] <= 100.01
-
-
 def test_interpretation_is_string():
     opt_result, cc, rf, tc = get_solved_result()
     text = generate_interpretation(opt_result, cc, rf)
@@ -264,6 +220,13 @@ def test_interpretation_explains_negative_objective():
         assert "net benefit" in text.lower() or "economic benefit" in text.lower()
 
 
+def test_interpretation_contains_disclaimer():
+    opt_result, cc, rf, tc = get_solved_result()
+    text = generate_interpretation(opt_result, cc, rf)
+
+    assert "scenario parameters supplied by the user" in text.lower()
+
+
 def test_process_all_results_returns_all_keys():
     opt_result, cc, rf, tc = get_solved_result()
     processed = process_all_results(opt_result, cc, rf, tc)
@@ -275,7 +238,7 @@ def test_process_all_results_returns_all_keys():
         "route_table",
         "constraint_table",
         "economic_summary",
-        "policy_insight",
+        "system_metrics",
         "interpretation",
     ]
 
@@ -300,8 +263,9 @@ def test_processed_economic_summary_matches_objective():
     assert summary["net_economic_value"] == -opt_result["objective_value"]
 
 
-def test_processed_policy_insight_matches_economic_summary():
+def test_processed_system_metrics_matches_calculate_system_metrics():
     opt_result, cc, rf, tc = get_solved_result()
     processed = process_all_results(opt_result, cc, rf, tc)
 
-    assert processed["policy_insight"]["economic_status"] == processed["economic_summary"]["economic_status"]
+    direct_metrics = calculate_system_metrics(opt_result, cc, rf)
+    assert processed["system_metrics"]["supply_absorption_pct"] == direct_metrics["supply_absorption_pct"]

@@ -32,7 +32,7 @@ app_ui = ui.TagList(
         optimization_ui("optimization"),
         results_ui("results"),
         documentation_ui("docs"),
-        title="NMC Battery Recycling Supply Chain Optimizer",
+        title="NMC Battery Recycling Allocation Optimizer",
         id="main_nav",
         bg="#1a5276",
         inverse=True,

@@ -1,18 +1,26 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata below."
-title: "NMC Battery Recycling Policy Decision Support Tool"
+title: "NMC Battery Recycling Allocation Optimizer"
 type: software
 authors:
-  - family-names: "TODO_AUTHOR_FAMILY_NAME"
-    given-names: "TODO_AUTHOR_GIVEN_NAME"
-    email: "TODO_AUTHOR_EMAIL"
-    affiliation: "TODO_AUTHOR_AFFILIATION"
+  - family-names: "Chaerani"
+    given-names: "Diah"
+    affiliation: "Universitas Padjadjaran"
+  - family-names: "Napitupulu"
+    given-names: "Herlina"
+    affiliation: "Universitas Padjadjaran"
+  - family-names: "Saputra"
+    given-names: "Moch Panji Agung"
+    affiliation: "Universitas Padjadjaran"
+  - family-names: "Sabiq"
+    given-names: "Muhammad Ismail"
+    affiliation: "Universitas Padjadjaran"
 version: "1.0.0"
 date-released: "2026-05-18"
 license: "MIT"
-repository-code: "TODO_REPOSITORY_URL"
+repository-code: "https://github.com/Visqy/NMC-Battery-Recycling-Allocation-Optimizer"
 url: "TODO_DEPLOYMENT_URL"
-abstract: "A Shiny for Python decision support tool for evaluating allocation, capacity, and economic outcomes in NMC electric vehicle battery recycling supply chain scenarios using a locked Linear Programming model."
+abstract: "An open-source Shiny for Python application for linear-programming-based allocation analysis in NMC electric vehicle battery recycling supply chain scenarios using a locked Linear Programming model."
 keywords:
   - linear programming
   - supply chain optimization
@@ -20,7 +28,7 @@ keywords:
   - NMC battery
   - electric vehicle battery waste
   - reverse logistics
-  - decision support system
+  - allocation optimization
   - Shiny for Python
 references:
   - type: article
